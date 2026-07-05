@@ -52,7 +52,7 @@ fun RenderElement(el: JSONObject, client: EmoClient) {
         "button"   -> ButtonRender(el, client)
         "textField"-> TextFieldRender(el, client)
         "image"    -> ImageRender(el)
-        "spacer"   -> Spacer(Modifier.weight(1f))
+        "spacer"   -> Spacer(Modifier.height(8.dp))
         "divider"  -> HorizontalDivider()
         else -> Text("[unknown kind: $kind]", color = Color.Red)
     }

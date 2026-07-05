@@ -43,3 +43,30 @@ Stage Summary:
   * Codegen mode (Build) for standalone APK + Diff mode for live patches
   * Server is single binary, no external deps beyond fsnotify/gorilla-websocket/cobra
   * emo Go preview app is generic — knows nothing about specific projects, just renders vtrees (Expo Go model)
+
+---
+Task ID: 2
+Agent: main
+Task: Package emo as APK + ZIP deliverables
+
+Work Log:
+- Installed Android command-line tools to ~/Android/Sdk
+- Installed Android platform-tools, platforms;android-34, build-tools;34.0.0
+- Downloaded Gradle 8.7 to /tmp/gradle-install/
+- First build attempt: failed on missing mipmap/ic_launcher and missing Theme.Material3 — fixed by using @android:drawable/sym_def_app_icon and a custom Theme.EmoGo based on android:Theme.Material.Light.NoActionBar
+- Second build attempt: failed on Kotlin compile — fixed three issues:
+  1. MainActivity extended Activity instead of ComponentActivity (setContent requires ComponentActivity)
+  2. Unused import okhttp3.ws.WebSocket (removed)
+  3. Spacer(Modifier.weight(1f)) — weight() only works inside Row/Column scope; replaced with Spacer(Modifier.height(8.dp))
+- Also switched OkHttpClient.pingInterval from java.time.Duration to (Long, TimeUnit) for OkHttp 4.x compat
+- Removed deprecated package attribute from AndroidManifest (namespace is set in build.gradle.kts)
+- BUILD SUCCESSFUL in 59s on third attempt: 35/35 tasks executed
+- Created emo-framework.zip (90 KB, 58 files) excluding .emo/, bin/, .gradle/, build/
+- Created emo-go-preview.apk (8.5 MB, valid Android package with classes.dex, AndroidX, Compose deps)
+- Wrote installation/usage README.md alongside the deliverables
+
+Stage Summary:
+- /home/z/my-project/download/emo-go-preview.apk — 8.5 MB Android APK, installable via `adb install -r`
+- /home/z/my-project/download/emo-framework.zip — 90 KB full Go framework source
+- /home/z/my-project/download/README.md — installation & usage guide
+- APK verified: contains classes.dex (compiled Kotlin), all AndroidX/Compose deps, valid Android package signature

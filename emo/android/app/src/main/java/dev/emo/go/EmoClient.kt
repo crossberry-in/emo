@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import okhttp3.*
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 /**
  * EmoClient manages the WebSocket connection to the emo dev server and the
@@ -43,7 +44,7 @@ class EmoClient {
         _state.value = _state.value.copy(connecting = true, error = null)
 
         val client = OkHttpClient.Builder()
-            .pingInterval(java.time.Duration.ofSeconds(15))
+            .pingInterval(15, TimeUnit.SECONDS)
             .build()
 
         val req = Request.Builder().url(url).build()

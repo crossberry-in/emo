@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,11 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import okhttp3.*
-import okhttp3.ws.WebSocket
 import org.json.JSONObject
-import org.json.JSONArray
-import java.lang.ref.WeakReference
 
 /**
  * emo Go — the Expo Go equivalent for the emo framework.
@@ -38,7 +35,7 @@ import java.lang.ref.WeakReference
  * It's a generic vtree renderer, exactly like Expo Go is a generic JS bundle
  * runner.
  */
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
 
     private val client = EmoClient()
 
@@ -51,9 +48,7 @@ class MainActivity : Activity() {
         val projectId = intent?.getStringExtra("emo_project") ?: "unknown"
 
         setContent {
-            MaterialTheme {
-                EmoRootScreen(client, serverUrl, projectId)
-            }
+            EmoRootScreen(client, serverUrl, projectId)
         }
 
         // Auto-connect if URL was provided.
