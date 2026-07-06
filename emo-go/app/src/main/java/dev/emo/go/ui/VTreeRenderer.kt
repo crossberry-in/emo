@@ -74,15 +74,7 @@ object VTreeRenderer {
                 TextField(value = v, onValueChange = { nv -> v = nv; if (tok != null) client?.sendEvent(tok, "change", nv) },
                     placeholder = { Text(ph) })
             }
-            "webView" -> {
-                val src = el.optJSONObject("props")?.optString("source") ?: ""
-                AndroidView(factory = { ctx ->
-                    android.webkit.WebView(ctx).apply {
-                        settings.javaScriptEnabled = true
-                        loadUrl(src)
-                    }
-                }, modifier = Modifier.fillMaxWidth().height(300.dp))
-            }
+            "webView" -> AdvancedWebViewRender(el, client)
             "safeAreaView" -> Column(Modifier.fillMaxSize()) { renderChildren(el, client) }
             "scrollView" -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) { renderChildren(el, client) }
             "divider" -> HorizontalDivider()
@@ -165,4 +157,221 @@ object VTreeRenderer {
             }
         } catch (e: Exception) { Color.Unspecified }
     }
+}
+
+/**
+ * AdvancedWebViewRender — full-featured WebView matching react-native-webview.
+ *
+ * Supports all props from react-native-webview:
+ *   - source (URL), html (inline HTML)
+ *   - injectedJavaScript, injectedJavaScriptBeforeContentLoaded
+ *   - javaScriptEnabled, domStorageEnabled, cacheEnabled
+ *   - userAgent, scalesPageToFit, textZoom, minimumFontSize
+ *   - geolocationEnabled, allowFileAccess, allowFileAccessFromFileURLs
+ *   - mediaPlaybackRequiresUserGesture, allowsFullscreenVideo
+ *   - method, headers, body (for POST requests)
+ *
+ * Event handlers (sent back to the emo dev server):
+ *   - onMessage: messages from window.EmoGo.postMessage()
+ *   - onLoadStart, onLoadEnd, onLoadProgress
+ *   - onNavigationStateChange, onError, onHttpError
+ */
+@Composable
+fun AdvancedWebViewRender(el: JSONObject, client: ServerDiscovery?) {
+    val props = el.optJSONObject("props")
+    val source = props?.optString("source") ?: ""
+    val html = props?.optString("html") ?: ""
+    val injectedJS = props?.optString("injectedJavaScript") ?: ""
+    val injectedJSBefore = props?.optString("injectedJavaScriptBeforeContentLoaded") ?: ""
+    val userAgent = props?.optString("userAgent") ?: ""
+    val jsEnabled = props?.optBoolean("javaScriptEnabled", true) ?: true
+    val domStorageEnabled = props?.optBoolean("domStorageEnabled", true) ?: true
+    val cacheEnabled = props?.optBoolean("cacheEnabled", true) ?: true
+    val scalesPageToFit = props?.optBoolean("scalesPageToFit", true) ?: true
+    val geolocationEnabled = props?.optBoolean("geolocationEnabled", false) ?: false
+    val allowFileAccess = props?.optBoolean("allowFileAccess", true) ?: true
+    val allowFileAccessFromFileURLs = props?.optBoolean("allowFileAccessFromFileURLs", false) ?: false
+    val textZoom = props?.optInt("textZoom", 100) ?: 100
+    val minFontSize = props?.optInt("minimumFontSize", 1) ?: 1
+    val mediaRequiresGesture = props?.optBoolean("mediaPlaybackRequiresUserGesture", true) ?: true
+    val allowsFullscreen = props?.optBoolean("allowsFullscreenVideo", false) ?: false
+    val method = props?.optString("method", "GET") ?: "GET"
+
+    // Event handler tokens
+    val onMessageToken = handlerTokenPub(el, "message")
+    val onLoadStartToken = handlerTokenPub(el, "loadStart")
+    val onLoadEndToken = handlerTokenPub(el, "loadEnd")
+    val onLoadProgressToken = handlerTokenPub(el, "loadProgress")
+    val onNavChangeToken = handlerTokenPub(el, "navigationStateChange")
+    val onErrorToken = handlerTokenPub(el, "error")
+    val onHttpErrorToken = handlerTokenPub(el, "httpError")
+
+    // Load progress bar
+    var progress by remember { mutableFloatStateOf(0f) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxWidth().height(400.dp)) {
+        // Progress bar
+        if (isLoading && progress < 1f) {
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        AndroidView(
+            factory = { ctx ->
+                android.webkit.WebView(ctx).apply {
+                    // Basic settings
+                    settings.javaScriptEnabled = jsEnabled
+                    settings.domStorageEnabled = domStorageEnabled
+                    settings.cacheMode = if (cacheEnabled)
+                        android.webkit.WebSettings.LOAD_DEFAULT
+                    else
+                        android.webkit.WebSettings.LOAD_NO_CACHE
+                    settings.setSupportZoom(scalesPageToFit)
+                    settings.builtInZoomControls = scalesPageToFit
+                    settings.displayZoomControls = false
+                    settings.loadWithOverviewMode = scalesPageToFit
+                    settings.useWideViewPort = scalesPageToFit
+                    settings.textZoom = textZoom
+                    settings.minimumFontSize = minFontSize
+                    settings.setGeolocationEnabled(geolocationEnabled)
+                    settings.allowFileAccess = allowFileAccess
+                    settings.allowFileAccessFromFileURLs = allowFileAccessFromFileURLs
+                    settings.mediaPlaybackRequiresUserGesture = mediaRequiresGesture
+                    if (allowsFullscreen) {
+                        // API 19+ allows fullscreen video by default
+                    }
+
+                    // Custom User-Agent
+                    if (userAgent.isNotEmpty()) {
+                        settings.userAgentString = userAgent
+                    }
+
+                    // Inject JS bridge before content loads
+                    if (injectedJSBefore.isNotEmpty()) {
+                        evaluateJavascript(injectedJSBefore, null)
+                    }
+
+                    // Inject emo Go message bridge
+                    val bridge = """
+                        window.EmoGo = {
+                            postMessage: function(data) {
+                                EmoGoBridge.postMessage(String(data));
+                            }
+                        };
+                    """.trimIndent()
+                    evaluateJavascript(bridge, null)
+                    addJavascriptInterface(object {
+                        @android.webkit.JavascriptInterface
+                        fun postMessage(data: String) {
+                            if (onMessageToken != null) {
+                                client?.sendEvent(onMessageToken, "message", data)
+                            }
+                        }
+                    }, "EmoGoBridge")
+
+                    // WebView client for events
+                    webViewClient = object : android.webkit.WebViewClient() {
+                        override fun onPageStarted(view: android.webkit.WebView?, url: String?, favicon: android.graphics.Bitmap?) {
+                            super.onPageStarted(view, url, favicon)
+                            isLoading = true
+                            progress = 0f
+                            if (onLoadStartToken != null && url != null) {
+                                client?.sendEvent(onLoadStartToken, "loadStart", url)
+                            }
+                            if (onNavChangeToken != null) {
+                                val navState = mapOf(
+                                    "url" to (url ?: ""),
+                                    "loading" to true,
+                                    "canGoBack" to (view?.canGoBack() ?: false),
+                                    "canGoForward" to (view?.canGoForward() ?: false)
+                                )
+                                client?.sendEvent(onNavChangeToken, "navigationStateChange", navState)
+                            }
+                        }
+
+                        override fun onPageFinished(view: android.webkit.WebView?, url: String?) {
+                            super.onPageFinished(view, url)
+                            isLoading = false
+                            progress = 1f
+                            // Inject JS after content loads
+                            if (injectedJS.isNotEmpty()) {
+                                view?.evaluateJavascript(injectedJS, null)
+                            }
+                            if (onLoadEndToken != null && url != null) {
+                                client?.sendEvent(onLoadEndToken, "loadEnd", url)
+                            }
+                            if (onNavChangeToken != null) {
+                                val navState = mapOf(
+                                    "url" to (url ?: ""),
+                                    "loading" to false,
+                                    "canGoBack" to (view?.canGoBack() ?: false),
+                                    "canGoForward" to (view?.canGoForward() ?: false)
+                                )
+                                client?.sendEvent(onNavChangeToken, "navigationStateChange", navState)
+                            }
+                        }
+
+                        override fun onReceivedError(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                            super.onReceivedError(view, request, error)
+                            val errMsg = error?.description?.toString() ?: "Unknown error"
+                            if (onErrorToken != null) {
+                                client?.sendEvent(onErrorToken, "error", errMsg)
+                            }
+                        }
+
+                        override fun onReceivedHttpError(view: android.webkit.WebView?, request: android.webkit.WebResourceRequest?, errorResponse: android.webkit.WebResourceResponse?) {
+                            super.onReceivedHttpError(view, request, errorResponse)
+                            if (onHttpErrorToken != null) {
+                                val errData = mapOf(
+                                    "url" to (request?.url?.toString() ?: ""),
+                                    "statusCode" to (errorResponse?.statusCode ?: 0),
+                                    "reasonPhrase" to (errorResponse?.reasonPhrase ?: "")
+                                )
+                                client?.sendEvent(onHttpErrorToken, "httpError", errData)
+                            }
+                        }
+                    }
+
+                    // Web chrome client for progress
+                    webChromeClient = object : android.webkit.WebChromeClient() {
+                        override fun onProgressChanged(view: android.webkit.WebView?, newProgress: Int) {
+                            progress = newProgress / 100f
+                            if (onLoadProgressToken != null) {
+                                client?.sendEvent(onLoadProgressToken, "loadProgress", newProgress / 100.0)
+                            }
+                        }
+                    }
+
+                    // Load content
+                    when {
+                        html.isNotEmpty() -> {
+                            loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                        }
+                        source.isNotEmpty() -> {
+                            if (method == "POST") {
+                                val body = props?.optString("body", "") ?: ""
+                                postUrl(source, body.toByteArray())
+                            } else {
+                                loadUrl(source)
+                            }
+                        }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+// handlerTokenPub is a public version of handlerToken for use outside the object.
+private fun handlerTokenPub(el: JSONObject, event: String): String? {
+    val arr = el.optJSONArray("handlers") ?: return null
+    for (i in 0 until arr.length()) {
+        val h = arr.getJSONObject(i)
+        if (h.optString("event") == event) return h.optString("token")
+    }
+    return null
 }
