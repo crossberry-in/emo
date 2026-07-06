@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  * Screen — the app's navigation state.
  */
 enum class Screen {
-    Splash, Discovering, Connected, ManualConnect
+    Splash, Discovering, Connected, ManualConnect, VirtualPreview
 }
 
 /**
@@ -230,6 +230,7 @@ class ServerDiscovery {
 
     fun showManualConnect() { _currentScreen.value = Screen.ManualConnect }
     fun showDiscovery() { startDiscovery() }
+    fun showVirtualPreview() { _currentScreen.value = Screen.VirtualPreview }
 
     fun stop() {
         scanJob?.cancel()

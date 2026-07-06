@@ -76,6 +76,17 @@ fun DiscoveryScreen(discovery: ServerDiscovery) {
         ) {
             Text("Enter URL manually")
         }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Virtual Preview button — opens the phone-frame mockup.
+        OutlinedButton(
+            onClick = { discovery.showVirtualPreview() },
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF9B6FFF))
+        ) {
+            Text("📱 Virtual Preview")
+        }
     }
 }
 

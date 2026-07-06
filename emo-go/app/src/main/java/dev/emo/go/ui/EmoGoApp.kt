@@ -44,6 +44,7 @@ fun EmoGoApp(
                 Screen.Discovering -> DiscoveryScreen(discovery)
                 Screen.Connected -> ConnectedScreen(discovery)
                 Screen.ManualConnect -> ManualConnectScreen(discovery)
+                Screen.VirtualPreview -> VirtualPreviewScreen(discovery)
             }
 
             // Update notification overlay

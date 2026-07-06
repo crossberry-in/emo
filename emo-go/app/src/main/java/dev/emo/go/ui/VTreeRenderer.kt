@@ -21,14 +21,14 @@ import org.json.JSONObject
 object VTreeRenderer {
 
     @Composable
-    fun RenderTree(root: JSONObject, client: ServerDiscovery) {
+    fun RenderTree(root: JSONObject, client: ServerDiscovery?) {
         Box(modifier = Modifier.fillMaxSize()) {
             RenderElement(root, client)
         }
     }
 
     @Composable
-    fun RenderElement(el: JSONObject, client: ServerDiscovery) {
+    fun RenderElement(el: JSONObject, client: ServerDiscovery?) {
         when (el.optString("kind")) {
             "scaffold" -> { Scaffold { p -> Box(Modifier.padding(p)) { renderChild(el, 0, client) } } }
             "column" -> {
@@ -63,7 +63,7 @@ object VTreeRenderer {
             }
             "button" -> {
                 val tok = handlerToken(el, "click")
-                Button(onClick = { if (tok != null) client.sendEvent(tok, "click") }) {
+                Button(onClick = { if (tok != null) client?.sendEvent(tok, "click") }) {
                     Text(el.optString("text"))
                 }
             }
@@ -71,7 +71,7 @@ object VTreeRenderer {
                 val ph = el.optJSONObject("props")?.optString("placeholder") ?: ""
                 val tok = handlerToken(el, "change")
                 var v by remember { mutableStateOf("") }
-                TextField(value = v, onValueChange = { nv -> v = nv; if (tok != null) client.sendEvent(tok, "change", nv) },
+                TextField(value = v, onValueChange = { nv -> v = nv; if (tok != null) client?.sendEvent(tok, "change", nv) },
                     placeholder = { Text(ph) })
             }
             "webView" -> {
@@ -94,13 +94,13 @@ object VTreeRenderer {
                 val v = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
                 val t = handlerToken(el, "change")
                 var s by remember { mutableStateOf(v) }
-                Switch(checked = s, onCheckedChange = { nv -> s = nv; if (t != null) client.sendEvent(t, "change", nv) })
+                Switch(checked = s, onCheckedChange = { nv -> s = nv; if (t != null) client?.sendEvent(t, "change", nv) })
             }
             "slider" -> {
                 val v = (el.optJSONObject("props")?.opt("value") as? Number)?.toFloat() ?: 0.5f
                 val t = handlerToken(el, "change")
                 var s by remember { mutableStateOf(v) }
-                Slider(value = s, onValueChange = { nv -> s = nv; if (t != null) client.sendEvent(t, "change", nv.toDouble()) })
+                Slider(value = s, onValueChange = { nv -> s = nv; if (t != null) client?.sendEvent(t, "change", nv.toDouble()) })
             }
             "activityIndicator" -> Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             "progress" -> LinearProgressIndicator(Modifier.fillMaxWidth().padding(16.dp))
@@ -114,12 +114,12 @@ object VTreeRenderer {
                 val v = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
                 val t = handlerToken(el, "change")
                 var s by remember { mutableStateOf(v) }
-                Checkbox(checked = s, onCheckedChange = { nv -> s = nv; if (t != null) client.sendEvent(t, "change", nv) })
+                Checkbox(checked = s, onCheckedChange = { nv -> s = nv; if (t != null) client?.sendEvent(t, "change", nv) })
             }
             "radioButton" -> {
                 val v = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
                 val t = handlerToken(el, "click")
-                RadioButton(selected = v, onClick = { if (t != null) client.sendEvent(t, "click") })
+                RadioButton(selected = v, onClick = { if (t != null) client?.sendEvent(t, "click") })
             }
             "icon" -> {
                 val n = el.optJSONObject("props")?.optString("name") ?: "info"
@@ -130,7 +130,7 @@ object VTreeRenderer {
     }
 
     @Composable
-    private fun renderChildren(el: JSONObject, client: ServerDiscovery) {
+    private fun renderChildren(el: JSONObject, client: ServerDiscovery?) {
         val children = el.optJSONArray("children") ?: return
         for (i in 0 until children.length()) {
             RenderElement(children.getJSONObject(i), client)
@@ -138,7 +138,7 @@ object VTreeRenderer {
     }
 
     @Composable
-    private fun renderChild(el: JSONObject, index: Int, client: ServerDiscovery) {
+    private fun renderChild(el: JSONObject, index: Int, client: ServerDiscovery?) {
         val children = el.optJSONArray("children")
         if (children != null && children.length() > index) {
             RenderElement(children.getJSONObject(index), client)
