@@ -43,6 +43,16 @@ func newStartCmd() *cobra.Command {
                                 if err != nil {
                                         return err
                                 }
+                        } else {
+                                // Check if the requested port is available; if not, auto-pick.
+                                if !isPortFree(port) {
+                                        oldPort := port
+                                        port, err = freePort()
+                                        if err != nil {
+                                                return fmt.Errorf("port %d is in use and could not find a free port: %w", oldPort, err)
+                                        }
+                                        log.Printf("warning: port %d is in use, using port %d instead", oldPort, port)
+                                }
                         }
 
                         srv := server.New(dir, port)
@@ -479,6 +489,16 @@ func freePort() (int, error) {
         }
         defer l.Close()
         return l.Addr().(*net.TCPAddr).Port, nil
+}
+
+// isPortFree returns true if the given TCP port is available for binding.
+func isPortFree(port int) bool {
+        l, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+        if err != nil {
+                return false
+        }
+        l.Close()
+        return true
 }
 
 func ensureGo() error {

@@ -245,3 +245,47 @@ Stage Summary:
 - 22 components installable via emo install
 - Deliverables: emo-framework.zip + emo-go-preview.apk (8.5 MB) at /home/z/my-project/download/
 - Release: https://github.com/crossberry-in/emo/releases/tag/v0.1.2
+
+---
+Task ID: 8
+Agent: main
+Task: Fix project structure + port conflict + adb error + write FRAMEWORK.md
+
+Work Log:
+- Fixed emo init: now uses "default" template by default (was creating minimal 4-file project)
+  - Users get full project structure: app/, components/, hooks/, scripts/, android/, assets/
+  - 45 files instead of 4 files
+- Fixed emo start: auto-picks a free port if 7575 is in use
+  - Added isPortFree() helper
+  - Shows "warning: port 7575 is in use, using port XXXXX instead"
+  - No more "bind: address already in use" errors
+- Improved emo go error message for missing adb:
+  - Includes platform-specific install instructions (apt/brew/download)
+- Wrote FRAMEWORK.md (1000 lines, 17 sections):
+  1. Quick Start
+  2. Installation
+  3. Project Structure
+  4. The .em Language
+  5. CSS Styling
+  6. Native UI Elements (all 27 elements with examples)
+  7. State and Hooks
+  8. File-Based Routing
+  9. Live Reload
+  10. Components and Templates
+  11. Plugin System
+  12. Android Integration
+  13. CLI Reference
+  14. Building APKs
+  15. Configuration
+  16. Troubleshooting
+  17. Architecture
+- Rebuilt all 5 release binaries and updated v0.1.2 release assets
+- Rebuilt emo-framework.zip (129 KB, includes FRAMEWORK.md)
+
+Stage Summary:
+- emo init now creates full project structure (45 files) by default
+- emo start auto-falls back to a free port — no more port conflicts
+- emo go gives helpful adb install instructions
+- FRAMEWORK.md is the complete documentation (25 KB)
+- Deliverables: emo-framework.zip (129 KB) + emo-go-preview.apk (8.5 MB)
+- Release v0.1.2 updated: https://github.com/crossberry-in/emo/releases/tag/v0.1.2

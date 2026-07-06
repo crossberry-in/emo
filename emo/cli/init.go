@@ -104,14 +104,16 @@ func newInitCmd() *cobra.Command {
                         if pkg == "" {
                                 pkg = "dev.emo." + slug(name)
                         }
-                        if template != "" {
-                                return templateInit(name, template)
+                        // If no template specified, use "default" (full project with
+                        // app/, components/, hooks/, android/ — like create-expo-app).
+                        if template == "" {
+                                template = "default"
                         }
-                        return initProject(name, pkg)
+                        return templateInit(name, template)
                 },
         }
         c.Flags().StringVar(&pkg, "package", "", "Kotlin package name (default dev.emo.<slug>)")
-        c.Flags().StringVar(&template, "template", "", "Project template to use (run `emo templates` to list)")
+        c.Flags().StringVar(&template, "template", "", "Project template (default: 'default'. Run `emo templates` to list)")
         return c
 }
 
