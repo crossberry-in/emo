@@ -123,15 +123,15 @@ if [ "$VERSION" = "latest" ]; then
     API_URL="https://api.github.com/repos/$REPO/releases/latest"
     # Try with token if available (avoids rate limit)
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+        VERSION=$( { set +e; curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'; } )
     fi
     # Fall back to unauthenticated API call.
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
-        VERSION=$(curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
+        VERSION=$( { set +e; curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'; } )
     fi
     # Fall back to the latest tag via the refs API (lighter weight).
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
-        VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/' || true)
+        VERSION=$( { set +e; curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/'; } )
     fi
     # Last resort: hardcode the known latest version.
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
