@@ -1,6 +1,7 @@
 package cli
 
 import (
+        "encoding/json"
         "fmt"
         "os"
         "os/exec"
@@ -8,6 +9,7 @@ import (
 
         "github.com/emo-framework/emo/codegen"
         "github.com/emo-framework/emo/eml"
+        buildpkg "github.com/emo-framework/emo/build"
         "github.com/emo-framework/emo/server"
         "github.com/spf13/cobra"
 )
@@ -23,11 +25,17 @@ func newBuildCmd() *cobra.Command {
                                 return err
                         }
                         dir, _ := os.Getwd()
-                        // Transpile .em → Go source for standalone build.
-                        emPath := filepath.Join(dir, "App.em")
-                        goSrc, err := eml.TranspileToGo(emPath, pkg)
+
+                        // Find entry .em file (app/index.em preferred).
+                        entryPath := findEntryEM(dir)
+                        if entryPath == "" {
+                                return fmt.Errorf("no .em entry file found (looked for app/index.em, App.em)")
+                        }
+
+                        // 1. Transpile .em → Go source (for reference / Go-based builds).
+                        goSrc, err := eml.TranspileToGo(entryPath, pkg)
                         if err != nil {
-                                return fmt.Errorf("transpile App.em: %w", err)
+                                return fmt.Errorf("transpile %s: %w", entryPath, err)
                         }
                         genDir := filepath.Join(dir, "__emo_gen__")
                         if err := os.MkdirAll(genDir, 0o755); err != nil {
@@ -37,10 +45,29 @@ func newBuildCmd() *cobra.Command {
                         if err := os.WriteFile(genPath, []byte(goSrc), 0o644); err != nil {
                                 return err
                         }
-                        fmt.Printf("generated %s\n", genPath)
+                        fmt.Printf("✓ generated %s\n", genPath)
 
-                        // For the Kotlin codegen, we need a dsl.Element tree. We evaluate
-                        // the .em component at runtime.
+                        // 2. Build the production bundle (embedded runtime artifact).
+                        appName := pkg
+                        if v, err := readAppName(dir); err == nil {
+                                appName = v
+                        }
+                        bundle, err := buildpkg.BuildBundle(buildpkg.BundleOptions{
+                                AppName:      appName,
+                                PackageName:  pkg,
+                                Version:      "1.0.0",
+                                EntryFile:    entryPath,
+                        })
+                        if err != nil {
+                                return fmt.Errorf("build bundle: %w", err)
+                        }
+                        bundlePath := filepath.Join(dir, ".emo", "build", "emo-bundle.json")
+                        if err := buildpkg.WriteBundle(bundle, bundlePath); err != nil {
+                                return err
+                        }
+                        fmt.Printf("✓ generated %s (production bundle)\n", bundlePath)
+
+                        // 3. Generate Kotlin source for standalone Compose (optional).
                         root, err := loadRootFromEM(dir)
                         if err != nil {
                                 return err
@@ -145,4 +172,48 @@ func newPluginsCmd() *cobra.Command {
                         return nil
                 },
         }
+}
+
+// findEntryEM finds the entry .em file for the project. Looks for:
+//   1. app/index.em (preferred — Expo Router style)
+//   2. App.em
+//   3. The first .em file in the project root
+func findEntryEM(dir string) string {
+        candidates := []string{
+                filepath.Join(dir, "app", "index.em"),
+                filepath.Join(dir, "App.em"),
+        }
+        for _, p := range candidates {
+                if _, err := os.Stat(p); err == nil {
+                        return p
+                }
+        }
+        // Fall back to first .em in root.
+        entries, err := os.ReadDir(dir)
+        if err != nil {
+                return ""
+        }
+        for _, e := range entries {
+                if !e.IsDir() && filepath.Ext(e.Name()) == ".em" {
+                        return filepath.Join(dir, e.Name())
+                }
+        }
+        return ""
+}
+
+// readAppName reads the app name from emo.json (like Expo's app.json).
+func readAppName(dir string) (string, error) {
+        data, err := os.ReadFile(filepath.Join(dir, "emo.json"))
+        if err != nil {
+                return "", err
+        }
+        var cfg struct {
+                Emo struct {
+                        Name string `json:"name"`
+                } `json:"emo"`
+        }
+        if err := json.Unmarshal(data, &cfg); err != nil {
+                return "", err
+        }
+        return cfg.Emo.Name, nil
 }
