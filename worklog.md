@@ -207,3 +207,41 @@ Stage Summary:
 - All .em files use JSX-like syntax (no .tsx)
 - Release v0.1.1 published at https://github.com/crossberry-in/emo/releases/tag/v0.1.1
 - Install: curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+
+---
+Task ID: 7
+Agent: main
+Task: Add 17 native UI elements + real-time preview + app/index.em entry point
+
+Work Log:
+- Added 17 new ElementKind constants to dsl/ (WebView, Input, SafeAreaView, ScrollView, Switch, Slider, ActivityIndicator, Picker, List, Card, Checkbox, RadioButton, Icon, Fab, Progress, TabBar, BottomNav, TopBar)
+- Added constructor functions for all new elements in dsl/dsl.go
+- Added helper options: Value(), Options(), Name(), OnToggle(func(bool)), OnSlide(func(float64))
+- Updated cli/start.go evalJSXElement() to handle all new element tags
+- Updated loadRootFromEM() to look for app/index.em first (like Expo Router), then App.em, then *.em
+- Updated Kotlin VTreeRenderer.kt with renderers for all new elements:
+  - WebViewRender: real Android WebView via AndroidView (loads URLs, JS enabled)
+  - SafeAreaViewRender: WindowInsets.statusBars + navigationBars padding
+  - ScrollViewRender: verticalScroll Column
+  - SwitchRender, SliderRender: interactive with state + event forwarding
+  - PickerRender: DropdownMenu with options
+  - CardRender, CheckboxRender, RadioButtonRender, IconRender
+  - TabRowRender: TabRow with content switching
+  - TopBarRender, FabRender, ProgressRender, ActivityIndicatorRender
+- Created 17 new installable components in emo-templates/components/
+- Updated components.json with all 22 components
+- Added app/index.em to default template (entry point)
+- Updated app/(tabs)/index.em to demo all UI elements (WebView, SafeAreaView, ScrollView, Switch, Slider, Picker, Card, etc.)
+- Rebuilt emo Go preview APK (8.5 MB) with all new Kotlin renderers — BUILD SUCCESSFUL
+- Created v0.1.2 GitHub release with 5 platform binaries
+- Verified end-to-end: emo create → emo start (loads app/index.em) → emo install WebView works
+
+Stage Summary:
+- emo 0.1.2 SDK now supports 27 native UI elements (10 original + 17 new)
+- WebView renders real web pages inside the app
+- SafeAreaView respects system bars
+- All interactive elements (Switch, Slider, Picker, Checkbox, RadioButton) forward events
+- emo start loads app/index.em as entry point (Expo Router style)
+- 22 components installable via emo install
+- Deliverables: emo-framework.zip + emo-go-preview.apk (8.5 MB) at /home/z/my-project/download/
+- Release: https://github.com/crossberry-in/emo/releases/tag/v0.1.2

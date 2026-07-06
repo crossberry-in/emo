@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import org.json.JSONArray
 import org.json.JSONObject
@@ -50,10 +51,28 @@ fun RenderElement(el: JSONObject, client: EmoClient) {
         "view"     -> BoxRender(el, client)
         "text"     -> TextRender(el)
         "button"   -> ButtonRender(el, client)
-        "textField"-> TextFieldRender(el, client)
+        "textField","input" -> TextFieldRender(el, client)
         "image"    -> ImageRender(el)
         "spacer"   -> Spacer(Modifier.height(8.dp))
         "divider"  -> HorizontalDivider()
+        // --- New native UI elements (emo 0.1.2) ---
+        "webView"  -> WebViewRender(el)
+        "safeAreaView" -> SafeAreaViewRender(el, client)
+        "scrollView" -> ScrollViewRender(el, client)
+        "switch"   -> SwitchRender(el, client)
+        "slider"   -> SliderRender(el, client)
+        "activityIndicator" -> Box(Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        "picker"   -> PickerRender(el, client)
+        "list"     -> ColumnRender(el, client)
+        "card"     -> CardRender(el, client)
+        "checkbox" -> CheckboxRender(el, client)
+        "radioButton" -> RadioButtonRender(el, client)
+        "icon"     -> IconRender(el)
+        "fab"      -> FloatingActionButton(onClick = {}) { Text("+") }
+        "progress" -> LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(16.dp))
+        "tabBar"   -> TabRowRender(el, client)
+        "bottomNav" -> ColumnRender(el, client)
+        "topBar"   -> TopBarRender(el)
         else -> Text("[unknown kind: $kind]", color = Color.Red)
     }
 }
@@ -169,6 +188,217 @@ private fun EachChild(el: JSONObject, render: @Composable (JSONObject) -> Unit) 
     for (i in 0 until children.length()) {
         render(children.getJSONObject(i))
     }
+}
+
+// ---------------------------------------------------------------------------
+// New native UI element renderers (emo 0.1.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * WebView — embeds a web page using Android's WebView via AndroidView.
+ * Source URL comes from props.source.
+ */
+@Composable
+fun WebViewRender(el: JSONObject) {
+    val src = el.optJSONObject("props")?.optString("source") ?: ""
+    AndroidView(
+        factory = { ctx ->
+            android.webkit.WebView(ctx).apply {
+                settings.javaScriptEnabled = true
+                loadUrl(src)
+            }
+        },
+        modifier = Modifier.fillMaxWidth().height(300.dp)
+    )
+}
+
+/**
+ * SafeAreaView — adds padding for status bar and navigation bar.
+ */
+@Composable
+fun SafeAreaViewRender(el: JSONObject, client: EmoClient) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+    ) {
+        EachChild(el) { child -> RenderElement(child, client) }
+    }
+}
+
+/**
+ * ScrollView — vertically scrolling container.
+ */
+@Composable
+fun ScrollViewRender(el: JSONObject, client: EmoClient) {
+    val spacing = (el.optJSONObject("props")?.opt("spacing") as? Number)?.toDouble() ?: 0.0
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(spacing.dp),
+    ) {
+        EachChild(el) { child -> RenderElement(child, client) }
+    }
+}
+
+/**
+ * Switch — toggle on/off.
+ */
+@Composable
+fun SwitchRender(el: JSONObject, client: EmoClient) {
+    val checked = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
+    val changeToken = handlerToken(el, "change")
+    var state by remember { mutableStateOf(checked) }
+    Switch(
+        checked = state,
+        onCheckedChange = { v ->
+            state = v
+            if (changeToken != null) client.sendEvent(changeToken, "change", v)
+        }
+    )
+}
+
+/**
+ * Slider — range input 0..1.
+ */
+@Composable
+fun SliderRender(el: JSONObject, client: EmoClient) {
+    val value = (el.optJSONObject("props")?.opt("value") as? Number)?.toFloat() ?: 0.5f
+    val changeToken = handlerToken(el, "change")
+    var state by remember { mutableStateOf(value) }
+    Slider(
+        value = state,
+        onValueChange = { v ->
+            state = v
+            if (changeToken != null) client.sendEvent(changeToken, "change", v.toDouble())
+        }
+    )
+}
+
+/**
+ * Picker — dropdown menu.
+ */
+@Composable
+fun PickerRender(el: JSONObject, client: EmoClient) {
+    val optionsArr = el.optJSONObject("props")?.optJSONArray("options")
+    val options = mutableListOf<String>()
+    if (optionsArr != null) {
+        for (i in 0 until optionsArr.length()) {
+            options.add(optionsArr.getString(i))
+        }
+    }
+    var expanded by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(if (options.isNotEmpty()) options[0] else "") }
+    Box {
+        OutlinedButton(onClick = { expanded = true }) { Text(selected) }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { opt ->
+                DropdownMenuItem(
+                    text = { Text(opt) },
+                    onClick = {
+                        selected = opt
+                        expanded = false
+                        val changeToken = handlerToken(el, "change")
+                        if (changeToken != null) client.sendEvent(changeToken, "change", opt)
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Card — Material Design card.
+ */
+@Composable
+fun CardRender(el: JSONObject, client: EmoClient) {
+    Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            EachChild(el) { child -> RenderElement(child, client) }
+        }
+    }
+}
+
+/**
+ * Checkbox — boolean checkbox.
+ */
+@Composable
+fun CheckboxRender(el: JSONObject, client: EmoClient) {
+    val checked = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
+    val changeToken = handlerToken(el, "change")
+    var state by remember { mutableStateOf(checked) }
+    Checkbox(
+        checked = state,
+        onCheckedChange = { v ->
+            state = v
+            if (changeToken != null) client.sendEvent(changeToken, "change", v)
+        }
+    )
+}
+
+/**
+ * RadioButton — radio button.
+ */
+@Composable
+fun RadioButtonRender(el: JSONObject, client: EmoClient) {
+    val selected = (el.optJSONObject("props")?.opt("value") as? Boolean) ?: false
+    val clickToken = handlerToken(el, "click")
+    RadioButton(
+        selected = selected,
+        onClick = {
+            if (clickToken != null) client.sendEvent(clickToken, "click")
+        }
+    )
+}
+
+/**
+ * Icon — Material icon (renders name as text placeholder).
+ */
+@Composable
+fun IconRender(el: JSONObject) {
+    val name = el.optJSONObject("props")?.optString("name") ?: "info"
+    Text("[$name]", fontSize = 24.sp, color = Color.Gray)
+}
+
+/**
+ * TabRow — horizontal tab bar.
+ */
+@Composable
+fun TabRowRender(el: JSONObject, client: EmoClient) {
+    val children = el.optJSONArray("children") ?: return
+    val tabCount = children.length()
+    if (tabCount == 0) return
+    var selected by remember { mutableStateOf(0) }
+    Column {
+        TabRow(selectedTabIndex = selected) {
+            for (i in 0 until tabCount) {
+                val child = children.getJSONObject(i)
+                val title = child.optString("text", "Tab $i")
+                Tab(
+                    selected = selected == i,
+                    onClick = { selected = i },
+                    text = { Text(title) }
+                )
+            }
+        }
+        RenderElement(children.getJSONObject(selected), client)
+    }
+}
+
+/**
+ * TopBar — top app bar.
+ */
+@Composable
+fun TopBarRender(el: JSONObject) {
+    val title = el.optJSONObject("props")?.optString("title") ?: el.optString("text", "")
+    Text(
+        title,
+        fontSize = 20.sp,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.fillMaxWidth().padding(16.dp)
+    )
 }
 
 private fun handlerToken(el: JSONObject, event: String): String? {

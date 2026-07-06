@@ -91,32 +91,36 @@ func newStartCmd() *cobra.Command {
 // dsl.Element calls at runtime. This avoids the need for Go's plugin
 // package and works on all platforms.
 func loadRootFromEM(dir string) (func() dsl.Element, error) {
-        // Look for App.em first, then any .em file.
-        appPath := filepath.Join(dir, "App.em")
-        if _, err := os.Stat(appPath); err != nil {
-                // Find the first .em file in the directory.
-                entries, err2 := os.ReadDir(dir)
-                if err2 != nil {
-                        return nil, fmt.Errorf("read dir: %w", err2)
-                }
-                found := ""
-                for _, e := range entries {
-                        if filepath.Ext(e.Name()) == ".em" {
-                                found = filepath.Join(dir, e.Name())
-                                break
+        // Look for app/index.em first (like Expo Router), then App.em, then any .em file.
+        candidates := []string{
+                filepath.Join(dir, "app", "index.em"),
+                filepath.Join(dir, "App.em"),
+        }
+        for _, p := range candidates {
+                if _, err := os.Stat(p); err == nil {
+                        root, err := emlRootFactory(p)
+                        if err != nil {
+                                return nil, err
                         }
+                        return root, nil
                 }
-                if found == "" {
-                        return nil, fmt.Errorf("no .em file found in %s", dir)
-                }
-                appPath = found
         }
 
-        root, err := emlRootFactory(appPath)
+        // Find the first .em file in the directory.
+        entries, err := os.ReadDir(dir)
         if err != nil {
-                return nil, err
+                return nil, fmt.Errorf("read dir: %w", err)
         }
-        return root, nil
+        for _, e := range entries {
+                if filepath.Ext(e.Name()) == ".em" {
+                        root, err := emlRootFactory(filepath.Join(dir, e.Name()))
+                        if err != nil {
+                                return nil, err
+                        }
+                        return root, nil
+                }
+        }
+        return nil, fmt.Errorf("no .em file found in %s (looked for app/index.em, App.em, *.em)", dir)
 }
 
 // emlRootFactory creates a factory function that re-transpiles the .em file
@@ -221,6 +225,43 @@ func evalJSXElement(f *eml.File, el eml.JSXElement) dsl.Element {
                 return dsl.Spacer(opts...)
         case "Divider":
                 return dsl.Divider(opts...)
+        // --- New native UI elements (emo 0.1.2) ---
+        case "WebView":
+                return dsl.WebView(opts...)
+        case "Input":
+                return dsl.Input(opts...)
+        case "SafeAreaView":
+                return dsl.SafeAreaView(append(opts, dsl.Children(children...))...)
+        case "ScrollView":
+                return dsl.ScrollView(append(opts, dsl.Children(children...))...)
+        case "Switch":
+                return dsl.Switch(opts...)
+        case "Slider":
+                return dsl.Slider(opts...)
+        case "ActivityIndicator":
+                return dsl.ActivityIndicator(opts...)
+        case "Picker":
+                return dsl.Picker(opts...)
+        case "List":
+                return dsl.List(append(opts, dsl.Children(children...))...)
+        case "Card":
+                return dsl.Card(append(opts, dsl.Children(children...))...)
+        case "Checkbox":
+                return dsl.Checkbox(opts...)
+        case "RadioButton":
+                return dsl.RadioButton(opts...)
+        case "Icon":
+                return dsl.Icon(opts...)
+        case "Fab":
+                return dsl.Fab(opts...)
+        case "Progress":
+                return dsl.Progress(opts...)
+        case "TabBar":
+                return dsl.TabBar(append(opts, dsl.Children(children...))...)
+        case "BottomNav":
+                return dsl.BottomNav(append(opts, dsl.Children(children...))...)
+        case "TopBar":
+                return dsl.TopBar(opts...)
         default:
                 // Unknown tag — render as a View with children.
                 return dsl.View(append(opts, dsl.Children(children...))...)
