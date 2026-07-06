@@ -57,15 +57,20 @@ if [ "$VERSION" = "latest" ]; then
     API_URL="https://api.github.com/repos/$REPO/releases/latest"
     # Try with token if available (avoids rate limit)
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
-    else
-        VERSION=$(curl -fsSL "$API_URL" | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
     fi
+    # Fall back to unauthenticated API call.
     if [ -z "$VERSION" ]; then
-        # No releases yet — fall back to building from source.
-        warn "No pre-built releases found. Building from source…"
-        install_from_source
-        exit 0
+        VERSION=$(curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+    fi
+    # Fall back to the latest tag via the refs API (lighter weight).
+    if [ -z "$VERSION" ]; then
+        VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/')
+    fi
+    # Last resort: hardcode the known latest version.
+    if [ -z "$VERSION" ]; then
+        VERSION="v0.1.0"
+        warn "Could not reach GitHub API (rate limit?). Using $VERSION."
     fi
     info "Latest version: $VERSION"
 fi
