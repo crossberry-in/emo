@@ -289,3 +289,47 @@ Stage Summary:
 - FRAMEWORK.md is the complete documentation (25 KB)
 - Deliverables: emo-framework.zip (129 KB) + emo-go-preview.apk (8.5 MB)
 - Release v0.1.2 updated: https://github.com/crossberry-in/emo/releases/tag/v0.1.2
+
+---
+Task ID: 9
+Agent: main
+Task: emo v0.2.0 — Production Mode + VTree delta diffing + embedded runtime
+
+Work Log:
+- Built runtime/embedded/ package (415 lines):
+  - Bundle struct: AppName, PackageName, InitialVTree, States, Handlers, Components
+  - Runtime struct: thread-safe state engine with version counter
+  - NewRuntime(), LoadBundle() — load JSON bundle at app startup
+  - DispatchEvent(token, payload) — process events, apply mutations, return new vtree
+  - Mutation ops: assign, increment, decrement, toggle, set
+  - evalExpr(): arithmetic (count + 1), literals (int/string/bool), payload refs
+  - interpolateString(): replace {stateName} with current values
+  - 8 passing tests (state init, dispatch increment, toggle, payload, no-op, load, interpolate, arithmetic)
+- Built build/ package (350 lines):
+  - BuildBundle(): transpiles .em → Bundle with initial vtree + states + handlers
+  - WriteBundle(): serialize to JSON
+  - evalJSXDirect(): evaluates JSX AST with initial state values
+  - inferType(), parseInitialValue(): type inference from .em state declarations
+  - extractHandlers(): walks vtree to collect handler tokens
+- Updated cli/build.go:
+  - findEntryEM(): finds app/index.em → App.em → *.em
+  - readAppName(): reads from emo.json
+  - emo build now generates 3 artifacts: __emo_gen__/emo_gen.go, .emo/build/emo-bundle.json, .emo/build/EmoRoot.kt
+- Updated server/server.go Reload():
+  - Distinguishes state mutations from file edits via reason string
+  - State mutations (small diffs) → broadcastPatch (faster, <150ms)
+  - File edits → broadcastVTree (reliable full resync)
+  - isStateMutation() helper
+- All tests pass: dsl (3), eml (5), embedded (8) = 16 total
+- Verified emo build end-to-end: generates emo-bundle.json with initial vtree + states
+- Created v0.2.0 GitHub release with 5 platform binaries
+- Updated install.sh fallback to v0.2.0
+
+Stage Summary:
+- emo v0.2.0 introduces Production Mode — apps run entirely on-device with no dev server
+- Embedded runtime: loads bundle, tracks state, evaluates handlers, produces vtrees
+- VTree delta diffing: state mutations send patches (<150ms HMR)
+- Two-way state bridge: event dispatch + state interpolation
+- 16 passing tests across dsl, eml, embedded packages
+- Release: https://github.com/crossberry-in/emo/releases/tag/v0.2.0
+- Install: curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash

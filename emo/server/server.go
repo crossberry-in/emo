@@ -28,6 +28,7 @@ import (
         "os"
         "os/exec"
         "path/filepath"
+        "strings"
         "sync"
         "time"
 
@@ -210,10 +211,6 @@ func (s *Server) Reload(reason string) {
 
         log.Printf("reload (%s) — re-rendering vtree", reason)
 
-        // Hot function swap: recompile the project's Go code and reload handler
-        // closures. In this MVP we do not recompile the binary; instead the user
-        // re-runs `emo start` for code changes that affect non-DSL logic. The DSL
-        // layer is reactive and so most "live" edits work without recompile.
         if err := s.hotSwapGo(); err != nil {
                 s.broadcastError("Hot reload failed", err.Error(), "", 0)
                 return
@@ -229,12 +226,30 @@ func (s *Server) Reload(reason string) {
                 return
         }
 
-        // Diff and broadcast.
+        // Compute the diff. If the tree changed structurally (file edit), send
+        // the full vtree so the client can resync. If only state values changed,
+        // send a patch (smaller payload, faster).
         ops := codegen.Diff(old, newTree)
         if len(ops) == 0 {
                 return
         }
-        s.broadcastPatch(ops, reason)
+
+        // For file-change reloads, always send the full tree. For state mutations,
+        // the patch is sufficient. We distinguish by the reason string.
+        if isStateMutation(reason) && len(ops) < 10 {
+                // Small state change — send patch.
+                s.broadcastPatch(ops, reason)
+        } else {
+                // File change or large diff — send full tree for reliability.
+                s.broadcastVTree(newTree, reason)
+        }
+}
+
+// isStateMutation returns true if the reload was triggered by a state change
+// (not a file edit). State mutations produce small diffs; file edits can
+// produce large structural changes that are safer to send as a full tree.
+func isStateMutation(reason string) bool {
+        return reason == "state" || strings.HasPrefix(reason, "state:")
 }
 
 // hotSwapGo rebuilds the project's main package as a plugin and swaps it in.
