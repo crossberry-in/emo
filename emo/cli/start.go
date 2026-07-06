@@ -160,15 +160,89 @@ func emlRootFactory(path string) (func() dsl.Element, error) {
 // evalComponent evaluates a parsed .em Component AST into a dsl.Element at
 // runtime, without going through Go code generation. This is the key
 // innovation that makes live reload work without recompiling Go code.
+//
+// It tracks state variables declared in the component and resolves state
+// references in expressions (e.g. {url} → "https://expo.dev").
 func evalComponent(f *eml.File, c eml.Component) dsl.Element {
         if c.Render == nil {
                 return dsl.View()
         }
-        return evalJSXElement(f, *c.Render)
+        // Build a state map from the component's state declarations.
+        stateValues := make(map[string]any)
+        for _, s := range c.States {
+                stateValues[s.Name] = parseStateValue(s.Default.Raw)
+        }
+        return evalJSXElementState(f, *c.Render, stateValues)
 }
 
-// evalJSXElement converts a JSXElement AST node to a dsl.Element.
-func evalJSXElement(f *eml.File, el eml.JSXElement) dsl.Element {
+// parseStateValue parses a raw state default expression into a Go value.
+func parseStateValue(raw string) any {
+        raw = trimSpaceEM(raw)
+        // String literal
+        if len(raw) >= 2 && raw[0] == '"' && raw[len(raw)-1] == '"' {
+                return raw[1 : len(raw)-1]
+        }
+        // Boolean
+        if raw == "true" {
+                return true
+        }
+        if raw == "false" {
+                return false
+        }
+        // Integer
+        if n, err := parseIntEM(raw); err == nil {
+                return n
+        }
+        // Float
+        if f, err := parseFloatEM(raw); err == nil {
+                return f
+        }
+        // Fallback: treat as string
+        return raw
+}
+
+func parseIntEM(s string) (int, error) {
+        if s == "" {
+                return 0, fmt.Errorf("empty")
+        }
+        n := 0
+        for _, c := range s {
+                if c < '0' || c > '9' {
+                        return 0, fmt.Errorf("not int")
+                }
+                n = n*10 + int(c-'0')
+        }
+        return n, nil
+}
+
+func parseFloatEM(s string) (float64, error) {
+        if s == "" {
+                return 0, fmt.Errorf("empty")
+        }
+        var f float64
+        var div float64 = 1
+        hasDot := false
+        for _, c := range s {
+                if c == '.' {
+                        hasDot = true
+                        continue
+                }
+                if c < '0' || c > '9' {
+                        return 0, fmt.Errorf("not float")
+                }
+                if hasDot {
+                        div *= 10
+                        f = f*10 + float64(c-'0')
+                } else {
+                        f = f*10 + float64(c-'0')
+                }
+        }
+        return f / div, nil
+}
+
+// evalJSXElementState converts a JSXElement to a dsl.Element using the
+// provided state map for expression resolution.
+func evalJSXElementState(f *eml.File, el eml.JSXElement, state map[string]any) dsl.Element {
         // Apply className from CSS first.
         var opts []dsl.Option
         for _, a := range el.Attrs {
@@ -176,31 +250,32 @@ func evalJSXElement(f *eml.File, el eml.JSXElement) dsl.Element {
                         opts = append(opts, cssPropsToOptions(f, a.Value.String)...)
                 }
         }
-        // Apply explicit attrs.
+        // Apply explicit attrs, resolving state references in expressions.
         for _, a := range el.Attrs {
                 if a.Name == "className" {
                         continue
                 }
-                opt := jsxAttrToOption(a)
+                opt := jsxAttrToOptionState(a, state)
                 if opt != nil {
                         opts = append(opts, opt)
                 }
         }
-        // Build children.
+        // Build children, resolving state references in expressions.
         var children []dsl.Element
         for _, c := range el.Children {
                 switch c.Kind {
                 case "text":
                         children = append(children, dsl.Text(c.Text))
                 case "expr":
-                        children = append(children, dsl.Text(fmt.Sprintf("%v", c.Expr)))
+                        val := resolveExprEM(c.Expr, state)
+                        children = append(children, dsl.Text(fmt.Sprintf("%v", val)))
                 case "element":
-                        children = append(children, evalJSXElement(f, *c.Element))
+                        children = append(children, evalJSXElementState(f, *c.Element, state))
                 }
         }
 
         // For Text and Button, the first arg is the text content.
-        textContent := buildTextContent(el.Children)
+        textContent := buildTextContentState(el.Children, state)
 
         switch el.Tag {
         case "Scaffold":
@@ -322,6 +397,239 @@ func jsxAttrToOption(a eml.JSXAttr) dsl.Option {
         default:
                 return dsl.Prop(a.Name, formatAttrValEM(a.Value))
         }
+}
+
+// jsxAttrToOptionState converts a JSX attribute to a dsl.Option, resolving
+// state references in expressions using the provided state map.
+func jsxAttrToOptionState(a eml.JSXAttr, state map[string]any) dsl.Option {
+        switch a.Name {
+        case "onClick":
+                expr := a.Value.Expr
+                // Parse the state assignment and create a handler that mutates state
+                // and triggers re-render.
+                targetState, newValue := parseStateAssign(expr, state)
+                return dsl.OnClick(func() {
+                        if targetState != "" {
+                                state[targetState] = newValue
+                                dsl.ScheduleReRender()
+                        }
+                })
+        case "onChange":
+                return dsl.OnChange(func(s string) {
+                        // For now, just log — full onChange state wiring needs more work
+                        log.Printf("onChange: %s", s)
+                })
+        case "spacing":
+                return dsl.Spacing(parseNumEMState(a.Value, state))
+        case "padding":
+                return dsl.Padding(parseNumEMState(a.Value, state))
+        case "background":
+                return dsl.Bg(resolveStringEM(a.Value, state))
+        case "color":
+                return dsl.Fg(resolveStringEM(a.Value, state))
+        case "fontSize":
+                return dsl.Font(parseNumEMState(a.Value, state), "normal")
+        case "fontWeight":
+                return dsl.Prop("fontWeight", a.Value.String)
+        case "source":
+                // For WebView/Image — resolve the URL from state.
+                return dsl.Source(resolveStringEM(a.Value, state))
+        case "title":
+                return dsl.Prop("title", resolveStringEM(a.Value, state))
+        case "value":
+                return dsl.Value(resolveExprEM(a.Value.Expr, state))
+        default:
+                return dsl.Prop(a.Name, resolveAttrValEM(a.Value, state))
+        }
+}
+
+// parseStateAssign parses an onClick expression like "count = count + 1"
+// and returns the target state name and the new value.
+func parseStateAssign(expr string, state map[string]any) (string, any) {
+        expr = trimSpaceEM(expr)
+        // Strip arrow function: () => X
+        if i := indexStr(expr, "=>"); i >= 0 {
+                lhs := trimSpaceEM(expr[:i])
+                if lhs == "()" || lhs == "(_)" {
+                        return parseStateAssign(trimSpaceEM(expr[i+2:]), state)
+                }
+        }
+        // Find assignment
+        eq := indexByte(expr, '=')
+        if eq < 0 {
+                return "", nil
+        }
+        target := trimSpaceEM(expr[:eq])
+        rhs := trimSpaceEM(expr[eq+1:])
+        // Skip ==, <=, >=
+        if len(rhs) > 0 && rhs[0] == '=' {
+                return "", nil
+        }
+        // Evaluate the RHS expression
+        val := evalExprEM(rhs, state)
+        return target, val
+}
+
+// evalExprEM evaluates a simple expression against the state map.
+// Supports: "count + 1", "count - 1", "0", "\"text\"", "true", state refs.
+func evalExprEM(expr string, state map[string]any) any {
+        expr = trimSpaceEM(expr)
+        // String literal
+        if len(expr) >= 2 && expr[0] == '"' && expr[len(expr)-1] == '"' {
+                return expr[1 : len(expr)-1]
+        }
+        // Boolean
+        if expr == "true" {
+                return true
+        }
+        if expr == "false" {
+                return false
+        }
+        // Addition/subtraction: "state + N" or "state - N"
+        for _, op := range []string{"+", "-"} {
+                if idx := indexStr(expr, " "+op+" "); idx > 0 {
+                        left := trimSpaceEM(expr[:idx])
+                        right := trimSpaceEM(expr[idx+3:])
+                        leftVal := resolveValueEM(left, state)
+                        rightVal := resolveValueEM(right, state)
+                        return arithmeticEM(leftVal, rightVal, op)
+                }
+        }
+        // Single value reference
+        return resolveValueEM(expr, state)
+}
+
+// resolveValueEM resolves a single value (state name, number, or literal).
+func resolveValueEM(ref string, state map[string]any) any {
+        ref = trimSpaceEM(ref)
+        // State reference
+        if v, ok := state[ref]; ok {
+                return v
+        }
+        // Integer
+        if n, err := parseIntEM(ref); err == nil {
+                return n
+        }
+        // Float
+        if f, err := parseFloatEM(ref); err == nil {
+                return f
+        }
+        // String literal
+        if len(ref) >= 2 && ref[0] == '"' && ref[len(ref)-1] == '"' {
+                return ref[1 : len(ref)-1]
+        }
+        return ref
+}
+
+// resolveExprEM resolves a state reference expression to its value.
+func resolveExprEM(expr string, state map[string]any) any {
+        return evalExprEM(expr, state)
+}
+
+// resolveStringEM resolves a JSXAttrValue to a string, handling state refs.
+func resolveStringEM(v eml.JSXAttrValue, state map[string]any) string {
+        switch v.Kind {
+        case "string":
+                return v.String
+        case "expr":
+                val := resolveExprEM(v.Expr, state)
+                return fmt.Sprintf("%v", val)
+        case "number":
+                return v.Number
+        }
+        return ""
+}
+
+// resolveAttrValEM resolves a JSXAttrValue to an any for dsl.Prop.
+func resolveAttrValEM(v eml.JSXAttrValue, state map[string]any) any {
+        switch v.Kind {
+        case "string":
+                return v.String
+        case "number":
+                var f float64
+                fmt.Sscanf(v.Number, "%f", &f)
+                return f
+        case "expr":
+                return resolveExprEM(v.Expr, state)
+        }
+        return nil
+}
+
+// parseNumEMState parses a number from a JSXAttrValue, resolving state refs.
+func parseNumEMState(v eml.JSXAttrValue, state map[string]any) float64 {
+        if v.Kind == "number" {
+                var f float64
+                fmt.Sscanf(v.Number, "%f", &f)
+                return f
+        }
+        if v.Kind == "expr" {
+                val := resolveExprEM(v.Expr, state)
+                if f, ok := val.(float64); ok {
+                        return f
+                }
+                if n, ok := val.(int); ok {
+                        return float64(n)
+                }
+        }
+        return 0
+}
+
+// buildTextContentState builds text content from children, resolving state refs.
+func buildTextContentState(children []eml.JSXChild, state map[string]any) string {
+        var result string
+        for _, c := range children {
+                switch c.Kind {
+                case "text":
+                        result += c.Text
+                case "expr":
+                        val := resolveExprEM(c.Expr, state)
+                        result += fmt.Sprintf("%v", val)
+                }
+        }
+        return result
+}
+
+// arithmeticEM performs arithmetic on two values.
+func arithmeticEM(a, b any, op string) any {
+        ai, aOK := toIntEM(a)
+        bi, bOK := toIntEM(b)
+        if aOK && bOK {
+                switch op {
+                case "+":
+                        return ai + bi
+                case "-":
+                        return ai - bi
+                }
+        }
+        af, _ := toFloatEM(a)
+        bf, _ := toFloatEM(b)
+        switch op {
+        case "+":
+                return af + bf
+        case "-":
+                return af - bf
+        }
+        return 0
+}
+
+func toIntEM(v any) (int, bool) {
+        switch x := v.(type) {
+        case int:
+                return x, true
+        case float64:
+                return int(x), true
+        }
+        return 0, false
+}
+
+func toFloatEM(v any) (float64, bool) {
+        switch x := v.(type) {
+        case int:
+                return float64(x), true
+        case float64:
+                return x, true
+        }
+        return 0, false
 }
 
 // cssPropsToOptions converts CSS class properties to dsl.Options.
