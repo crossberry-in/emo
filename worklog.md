@@ -333,3 +333,45 @@ Stage Summary:
 - 16 passing tests across dsl, eml, embedded packages
 - Release: https://github.com/crossberry-in/emo/releases/tag/v0.2.0
 - Install: curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+
+---
+Task ID: 10
+Agent: main
+Task: Build emo Go as standalone repo with Expo Go-style UI + APK release
+
+Work Log:
+- Created crossberry-in/emo-go repo on GitHub
+- Built full source tree:
+  - MainActivity.kt — splash → discovery → connected screen flow
+  - ui/EmoGoApp.kt — root composable with splash, footer, update banner
+  - ui/ServerDiscovery.kt — LAN auto-detect (scans 192.168.x.1-254 on port 7575, checks /manifest)
+  - ui/DiscoveryScreen.kt — carousel of discovered servers + manual connect
+  - ui/VTreeRenderer.kt — renders vtree as Compose (all 27 UI elements)
+  - update/UpdateChecker.kt — checks GitHub releases API, shows update banner
+  - .github/workflows/build-apk.yml — CI that builds APK on tag push
+  - README.md with full docs
+  - app/build.gradle.kts (versionCode 3, versionName 0.2.0)
+- Fixed build issues:
+  - Icon: used @android:drawable/sym_def_app_icon
+  - Kotlin syntax: fixed dangling val + missing catch
+  - JDK: downloaded OpenJDK 17 (jlink missing from JRE 21)
+- BUILD SUCCESSFUL — APK 16 MB
+- Pushed source to https://github.com/crossberry-in/emo-go
+- Created v0.2.0 GitHub release with APK (emo-go-v0.2.0.apk, 16 MB)
+- Copied APK to /home/z/my-project/download/emo-go-v0.2.0.apk
+
+Features:
+- Splash screen: purple "e" logo + "emo Go" title + "Live preview for emo apps"
+- Auto-detect: scans LAN for /manifest endpoint on port 7575
+- Carousel: LazyRow of ServerCards showing project ID + IP + port
+- Manual connect: URL input fallback
+- Update checker: fetches GitHub releases, shows banner with "Update" button
+- Footer: "Built with ♥️ by crossberry" on every screen
+- Full vtree renderer: WebView, Text, Button, Input, Switch, Slider, Card, etc.
+- Auto-reconnect on connection loss
+
+Stage Summary:
+- emo Go repo: https://github.com/crossberry-in/emo-go
+- Release: https://github.com/crossberry-in/emo-go/releases/tag/v0.2.0
+- APK: 16 MB, installable via adb install -r emo-go-v0.2.0.apk
+- GitHub Actions CI configured for auto-building future releases on tag push

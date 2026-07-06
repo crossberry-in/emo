@@ -80,7 +80,6 @@ class ServerDiscovery {
             val baseIP = lanIP.substringBeforeLast(".")
 
             // Scan 1-254 in parallel (limited concurrency).
-            val 
             val jobs = mutableListOf<Deferred<Unit>>()
 
             for (i in 1..254) {
@@ -89,6 +88,8 @@ class ServerDiscovery {
                     jobs.add(async {
                         try {
                             tryServer(ip, port)
+                        } catch (e: Exception) {
+                            // Not reachable — skip.
                         }
                     })
                 }
