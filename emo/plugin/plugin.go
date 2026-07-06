@@ -12,31 +12,31 @@
 package plugin
 
 import (
-	"fmt"
-	"sync"
+        "fmt"
+        "sync"
 )
 
 // Plugin is the interface every emo plugin implements.
 type Plugin interface {
-	// Name returns the plugin's public name, e.g. "camera".
-	Name() string
-	// Methods returns the methods this plugin exposes.
-	Methods() []Method
+        // Name returns the plugin's public name, e.g. "camera".
+        Name() string
+        // Methods returns the methods this plugin exposes.
+        Methods() []Method
 }
 
 // Method describes a single callable method on a plugin.
 type Method struct {
-	Name   string                       // e.g. "takePhoto"
-	Params []Param                      // ordered input parameters
-	Return string                       // human-readable return type, for docs
-	Invoke func(params map[string]any, reply func(result any, err error)) // call into the device
+        Name   string                       // e.g. "takePhoto"
+        Params []Param                      // ordered input parameters
+        Return string                       // human-readable return type, for docs
+        Invoke func(params map[string]any, reply func(result any, err error)) // call into the device
 }
 
 // Param describes a method parameter.
 type Param struct {
-	Name string
-	Type string // "string" | "int" | "bool" | "float" | "object"
-	Desc string
+        Name string
+        Type string // "string" | "int" | "bool" | "float" | "object"
+        Desc string
 }
 
 // ---------------------------------------------------------------------------
@@ -44,61 +44,61 @@ type Param struct {
 // ---------------------------------------------------------------------------
 
 var (
-	mu        sync.RWMutex
-	plugins   = map[string]Plugin{}
-	listeners = []func(Plugin){}
+        mu        sync.RWMutex
+        plugins   = map[string]Plugin{}
+        listeners = []func(Plugin){}
 )
 
 // Register adds a plugin to the registry. Called from plugin init().
 func Register(p Plugin) {
-	mu.Lock()
-	defer mu.Unlock()
-	plugins[p.Name()] = p
-	for _, l := range listeners {
-		l(p)
-	}
+        mu.Lock()
+        defer mu.Unlock()
+        plugins[p.Name()] = p
+        for _, l := range listeners {
+                l(p)
+        }
 }
 
 // Get returns the named plugin, or nil if unregistered.
 func Get(name string) Plugin {
-	mu.RLock()
-	defer mu.RUnlock()
-	return plugins[name]
+        mu.RLock()
+        defer mu.RUnlock()
+        return plugins[name]
 }
 
 // All returns all registered plugins.
 func All() []Plugin {
-	mu.RLock()
-	defer mu.RUnlock()
-	out := make([]Plugin, 0, len(plugins))
-	for _, p := range plugins {
-		out = append(out, p)
-	}
-	return out
+        mu.RLock()
+        defer mu.RUnlock()
+        out := make([]Plugin, 0, len(plugins))
+        for _, p := range plugins {
+                out = append(out, p)
+        }
+        return out
 }
 
 // OnRegister subscribes to plugin registration events.
 func OnRegister(fn func(Plugin)) {
-	mu.Lock()
-	defer mu.Unlock()
-	listeners = append(listeners, fn)
+        mu.Lock()
+        defer mu.Unlock()
+        listeners = append(listeners, fn)
 }
 
 // Invoke calls a method on a plugin. The call is forwarded to the connected
 // device via the dev server's transport. reply is invoked asynchronously when
 // the device responds.
 func Invoke(pluginName, methodName string, params map[string]any, reply func(result any, err error)) error {
-	p := Get(pluginName)
-	if p == nil {
-		return fmt.Errorf("plugin %q not registered", pluginName)
-	}
-	for _, m := range p.Methods() {
-		if m.Name == methodName {
-			m.Invoke(params, reply)
-			return nil
-		}
-	}
-	return fmt.Errorf("plugin %q has no method %q", pluginName, methodName)
+        p := Get(pluginName)
+        if p == nil {
+                return fmt.Errorf("plugin %q not registered", pluginName)
+        }
+        for _, m := range p.Methods() {
+                if m.Name == methodName {
+                        m.Invoke(params, reply)
+                        return nil
+                }
+        }
+        return fmt.Errorf("plugin %q has no method %q", pluginName, methodName)
 }
 
 // ---------------------------------------------------------------------------
@@ -111,26 +111,26 @@ type CameraPlugin struct{}
 
 func (CameraPlugin) Name() string { return "camera" }
 func (CameraPlugin) Methods() []Method {
-	return []Method{
-		{
-			Name: "takePhoto",
-			Params: []Param{
-				{Name: "quality", Type: "int", Desc: "JPEG quality 0-100"},
-			},
-			Return: "string (base64 JPEG)",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("camera", "takePhoto", params, reply)
-			},
-		},
-		{
-			Name:   "requestPermission",
-			Params: nil,
-			Return: "bool",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("camera", "requestPermission", params, reply)
-			},
-		},
-	}
+        return []Method{
+                {
+                        Name: "takePhoto",
+                        Params: []Param{
+                                {Name: "quality", Type: "int", Desc: "JPEG quality 0-100"},
+                        },
+                        Return: "string (base64 JPEG)",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("camera", "takePhoto", params, reply)
+                        },
+                },
+                {
+                        Name:   "requestPermission",
+                        Params: nil,
+                        Return: "bool",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("camera", "requestPermission", params, reply)
+                        },
+                },
+        }
 }
 
 // LocationPlugin exposes GPS access.
@@ -138,24 +138,24 @@ type LocationPlugin struct{}
 
 func (LocationPlugin) Name() string { return "location" }
 func (LocationPlugin) Methods() []Method {
-	return []Method{
-		{
-			Name:   "getCurrentPosition",
-			Params: []Param{{Name: "highAccuracy", Type: "bool", Desc: "Use GPS instead of network"}},
-			Return: "object {lat,lng,accuracy,ts}",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("location", "getCurrentPosition", params, reply)
-			},
-		},
-		{
-			Name:   "startWatch",
-			Params: nil,
-			Return: "stream of positions",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("location", "startWatch", params, reply)
-			},
-		},
-	}
+        return []Method{
+                {
+                        Name:   "getCurrentPosition",
+                        Params: []Param{{Name: "highAccuracy", Type: "bool", Desc: "Use GPS instead of network"}},
+                        Return: "object {lat,lng,accuracy,ts}",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("location", "getCurrentPosition", params, reply)
+                        },
+                },
+                {
+                        Name:   "startWatch",
+                        Params: nil,
+                        Return: "stream of positions",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("location", "startWatch", params, reply)
+                        },
+                },
+        }
 }
 
 // StoragePlugin exposes a key-value store backed by SharedPreferences on
@@ -164,32 +164,32 @@ type StoragePlugin struct{}
 
 func (StoragePlugin) Name() string { return "storage" }
 func (StoragePlugin) Methods() []Method {
-	return []Method{
-		{
-			Name:   "get",
-			Params: []Param{{Name: "key", Type: "string"}},
-			Return: "string",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("storage", "get", params, reply)
-			},
-		},
-		{
-			Name:   "set",
-			Params: []Param{{Name: "key", Type: "string"}, {Name: "value", Type: "string"}},
-			Return: "void",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("storage", "set", params, reply)
-			},
-		},
-		{
-			Name:   "remove",
-			Params: []Param{{Name: "key", Type: "string"}},
-			Return: "void",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("storage", "remove", params, reply)
-			},
-		},
-	}
+        return []Method{
+                {
+                        Name:   "get",
+                        Params: []Param{{Name: "key", Type: "string"}},
+                        Return: "string",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("storage", "get", params, reply)
+                        },
+                },
+                {
+                        Name:   "set",
+                        Params: []Param{{Name: "key", Type: "string"}, {Name: "value", Type: "string"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("storage", "set", params, reply)
+                        },
+                },
+                {
+                        Name:   "remove",
+                        Params: []Param{{Name: "key", Type: "string"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("storage", "remove", params, reply)
+                        },
+                },
+        }
 }
 
 // VibrationPlugin exposes the vibrator.
@@ -197,33 +197,103 @@ type VibrationPlugin struct{}
 
 func (VibrationPlugin) Name() string { return "vibration" }
 func (VibrationPlugin) Methods() []Method {
-	return []Method{
-		{
-			Name:   "vibrate",
-			Params: []Param{{Name: "ms", Type: "int", Desc: "Duration in milliseconds"}},
-			Return: "void",
-			Invoke: func(params map[string]any, reply func(any, error)) {
-				forwardToDevice("vibration", "vibrate", params, reply)
-			},
-		},
-	}
+        return []Method{
+                {
+                        Name:   "vibrate",
+                        Params: []Param{{Name: "ms", Type: "int", Desc: "Duration in milliseconds"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("vibration", "vibrate", params, reply)
+                        },
+                },
+        }
+}
+
+// HapticsPlugin provides haptic feedback (impact, notification, selection).
+// Inspired by expo-haptics.
+type HapticsPlugin struct{}
+
+func (HapticsPlugin) Name() string { return "haptics" }
+func (HapticsPlugin) Methods() []Method {
+        return []Method{
+                {
+                        Name:   "impact",
+                        Params: []Param{{Name: "style", Type: "int", Desc: "1=Light, 2=Medium, 3=Heavy, 4=Rigid, 5=Soft"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("haptics", "impact", params, reply)
+                        },
+                },
+                {
+                        Name:   "notification",
+                        Params: []Param{{Name: "type", Type: "int", Desc: "1=Success, 2=Warning, 3=Error"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("haptics", "notification", params, reply)
+                        },
+                },
+                {
+                        Name:   "selection",
+                        Params: nil,
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("haptics", "selection", params, reply)
+                        },
+                },
+                {
+                        Name:   "vibrate",
+                        Params: []Param{{Name: "duration", Type: "int", Desc: "Duration in ms"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("haptics", "vibrate", params, reply)
+                        },
+                },
+        }
+}
+
+// LinkingPlugin provides URL opening and deep linking.
+// Inspired by expo-linking.
+type LinkingPlugin struct{}
+
+func (LinkingPlugin) Name() string { return "linking" }
+func (LinkingPlugin) Methods() []Method {
+        return []Method{
+                {
+                        Name:   "openURL",
+                        Params: []Param{{Name: "url", Type: "string", Desc: "URL to open"}},
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("linking", "openURL", params, reply)
+                        },
+                },
+                {
+                        Name:   "openSettings",
+                        Params: nil,
+                        Return: "void",
+                        Invoke: func(params map[string]any, reply func(any, error)) {
+                                forwardToDevice("linking", "openSettings", params, reply)
+                        },
+                },
+        }
 }
 
 // forwardToDevice is the transport hook. The dev server installs a real
 // implementation; the default just errors out so static builds fail loudly.
 var forwardToDevice = func(plugin, method string, params map[string]any, reply func(any, error)) {
-	reply(nil, fmt.Errorf("no device transport installed; running in static mode"))
+        reply(nil, fmt.Errorf("no device transport installed; running in static mode"))
 }
 
 // SetTransport installs the device-call transport. Called by the dev server.
 func SetTransport(fn func(plugin, method string, params map[string]any, reply func(any, error))) {
-	forwardToDevice = fn
+        forwardToDevice = fn
 }
 
 // init registers built-in plugins on package import.
 func init() {
-	Register(CameraPlugin{})
-	Register(LocationPlugin{})
-	Register(StoragePlugin{})
-	Register(VibrationPlugin{})
+        Register(CameraPlugin{})
+        Register(LocationPlugin{})
+        Register(StoragePlugin{})
+        Register(VibrationPlugin{})
+        Register(HapticsPlugin{})
+        Register(LinkingPlugin{})
 }
