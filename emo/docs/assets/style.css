@@ -1,0 +1,262 @@
+/* emo docs — clean, minimal, developer-friendly */
+:root {
+  --purple: #6C47FF;
+  --purple-light: #9B6FFF;
+  --purple-dark: #4A2FB8;
+  --bg: #FAFAFC;
+  --bg-card: #FFFFFF;
+  --text: #1A1A2E;
+  --text-muted: #666688;
+  --border: #E8E8F0;
+  --code-bg: #1A1A2E;
+  --code-text: #F8F8F2;
+  --sidebar-w: 280px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+/* === Top bar === */
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 64px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  z-index: 100;
+}
+.topbar .logo {
+  display: flex; align-items: center; gap: 10px;
+  font-weight: 800; font-size: 22px; color: var(--text);
+  text-decoration: none;
+}
+.topbar .logo .e {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--purple), var(--purple-light));
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 20px; font-weight: 800;
+}
+.topbar .nav { margin-left: auto; display: flex; gap: 24px; }
+.topbar .nav a {
+  color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 15px;
+  transition: color 0.15s;
+}
+.topbar .nav a:hover { color: var(--purple); }
+
+/* === Layout === */
+.layout {
+  display: flex;
+  margin-top: 64px;
+  min-height: calc(100vh - 64px);
+}
+
+/* === Sidebar === */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  padding: 32px 16px;
+  position: fixed;
+  top: 64px;
+  bottom: 0;
+  overflow-y: auto;
+}
+.sidebar h3 {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  margin: 20px 12px 8px;
+  font-weight: 700;
+}
+.sidebar h3:first-child { margin-top: 0; }
+.sidebar a {
+  display: block;
+  padding: 7px 12px;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 14.5px;
+  font-weight: 500;
+  transition: all 0.12s;
+}
+.sidebar a:hover { background: var(--bg); color: var(--purple); }
+.sidebar a.active { background: var(--purple); color: white; }
+
+/* === Content === */
+.content {
+  margin-left: var(--sidebar-w);
+  padding: 48px 64px 80px;
+  max-width: 900px;
+  width: 100%;
+}
+.content h1 {
+  font-size: 38px; font-weight: 800; margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+.content h2 {
+  font-size: 26px; font-weight: 700; margin: 36px 0 12px;
+  padding-top: 24px; border-top: 1px solid var(--border);
+  letter-spacing: -0.3px;
+}
+.content h3 {
+  font-size: 19px; font-weight: 700; margin: 24px 0 8px;
+}
+.content p { margin-bottom: 14px; color: var(--text); }
+.content ul, .content ol { margin: 8px 0 16px 24px; }
+.content li { margin-bottom: 6px; }
+.content a { color: var(--purple); text-decoration: none; font-weight: 500; }
+.content a:hover { text-decoration: underline; }
+
+/* === Code blocks === */
+.content code {
+  background: rgba(108, 71, 255, 0.08);
+  color: var(--purple-dark);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+  font-size: 14px;
+}
+.content pre {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 20px 24px;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 16px 0 20px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+.content pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: 14px;
+}
+
+/* === Cards === */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all 0.15s;
+}
+.card:hover {
+  border-color: var(--purple);
+  box-shadow: 0 4px 12px rgba(108, 71, 255, 0.1);
+  transform: translateY(-2px);
+}
+.card h4 { font-size: 16px; font-weight: 700; margin-bottom: 6px; color: var(--purple); }
+.card p { font-size: 14px; color: var(--text-muted); margin: 0; }
+
+/* === Tables === */
+.content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+.content th, .content td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.content th { background: var(--bg); font-weight: 700; }
+.content tr:nth-child(even) { background: var(--bg); }
+
+/* === Callouts === */
+.callout {
+  background: rgba(108, 71, 255, 0.06);
+  border-left: 3px solid var(--purple);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 16px 0;
+}
+.callout p { margin: 0; }
+.callout strong { color: var(--purple-dark); }
+
+/* === Install command === */
+.install-cmd {
+  background: var(--code-bg);
+  color: var(--code-text);
+  padding: 16px 20px;
+  border-radius: 10px;
+  font-family: monospace;
+  font-size: 15px;
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.install-cmd .prompt { color: var(--purple-light); user-select: none; }
+.install-cmd .cmd { flex: 1; }
+.install-cmd .copy {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: var(--code-text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+.install-cmd .copy:hover { background: rgba(255,255,255,0.2); }
+
+/* === Footer === */
+.footer {
+  margin-left: var(--sidebar-w);
+  padding: 24px 64px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.footer a { color: var(--text-muted); text-decoration: none; }
+.footer a:hover { color: var(--purple); }
+.footer .heart { color: #FF4466; }
+
+/* === Hero === */
+.hero {
+  background: linear-gradient(135deg, #1A1A2E 0%, #2D1B5E 100%);
+  color: white;
+  padding: 64px 48px;
+  border-radius: 16px;
+  margin-bottom: 40px;
+}
+.hero h1 { color: white; font-size: 42px; border: none; padding: 0; margin: 0 0 12px; }
+.hero p { color: #CCCCDD; font-size: 18px; margin-bottom: 24px; }
+.hero .badges { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero .badge {
+  background: rgba(255,255,255,0.1);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* === Mobile === */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .content, .footer { margin-left: 0; padding: 24px; }
+  .topbar .nav { display: none; }
+}

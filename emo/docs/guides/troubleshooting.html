@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Troubleshooting — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html" class="active">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>Troubleshooting</h1>
+<h2>adb not found on PATH</h2>
+<pre><code># Debian/Ubuntu:
+apt-get install -y android-tools-adb
+
+# macOS:
+brew install android-platform-tools</code></pre>
+<h2>address already in use</h2>
+<p>emo start automatically finds a free port if 7575 is busy. Check the log for the actual port.</p>
+<h2>TLS certificate error</h2>
+<pre><code># Install CA certificates:
+apt-get install -y ca-certificates && update-ca-certificates
+
+# Or as a workaround:
+export EMO_INSECURE=1</code></pre>
+<h2>emo: command not found</h2>
+<pre><code>echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc</code></pre>
+<h2>No device connected</h2>
+<pre><code>adb devices    # list devices
+emulator -avd Pixel_7  # start emulator</code></pre>
+<h2>WebView shows ERR_NAME_NOT_RESOLVED</h2>
+<p>Make sure <code>source={url}</code> uses <code>{url}</code> (expression) not <code>source="url"</code> (literal string). Update to the latest emo version — this was a bug fixed in v0.2.1.</p>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebView — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html" class="active">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>WebView</h1>
+<p>emo's WebView has full feature parity with <a href="https://github.com/react-native-webview/react-native-webview">react-native-webview</a>.</p>
+<h2>Basic usage</h2>
+<pre><code>&lt;WebView source="https://expo.dev" /&gt;</code></pre>
+<h2>Inline HTML</h2>
+<pre><code>&lt;WebView html="&lt;h1&gt;Hello!&lt;/h1&gt;&lt;p&gt;Inline HTML&lt;/p&gt;" /&gt;</code></pre>
+<h2>JavaScript injection</h2>
+<pre><code>&lt;WebView
+  source="https://example.com"
+  injectedJavaScript="document.title"
+  onMessage={(msg) =&gt; console.log(msg)"
+/&gt;</code></pre>
+<h2>JavaScript bridge</h2>
+<p>From inside the WebView, call:</p>
+<pre><code>window.EmoGo.postMessage("Hello from web page!");</code></pre>
+<p>This triggers the <code>onMessage</code> handler in your .em file.</p>
+<h2>All options</h2>
+<table>
+<tr><th>Option</th><th>Type</th><th>Description</th></tr>
+<tr><td>source</td><td>string</td><td>URL to load</td></tr>
+<tr><td>html</td><td>string</td><td>Inline HTML</td></tr>
+<tr><td>injectedJavaScript</td><td>string</td><td>JS injected after load</td></tr>
+<tr><td>userAgent</td><td>string</td><td>Custom User-Agent</td></tr>
+<tr><td>javaScriptEnabled</td><td>bool</td><td>Enable JS (default: true)</td></tr>
+<tr><td>domStorageEnabled</td><td>bool</td><td>DOM storage</td></tr>
+<tr><td>cacheEnabled</td><td>bool</td><td>Cache (default: true)</td></tr>
+<tr><td>scalesPageToFit</td><td>bool</td><td>Auto-fit page</td></tr>
+<tr><td>textZoom</td><td>int</td><td>Text zoom %</td></tr>
+<tr><td>method</td><td>string</td><td>HTTP method (GET/POST)</td></tr>
+</table>
+<h2>Event handlers</h2>
+<table>
+<tr><th>Handler</th><th>Callback</th><th>Fires when</th></tr>
+<tr><td>onMessage</td><td>func(string)</td><td>window.EmoGo.postMessage()</td></tr>
+<tr><td>onLoadStart</td><td>func(string)</td><td>Page starts loading</td></tr>
+<tr><td>onLoadEnd</td><td>func(string)</td><td>Page finishes loading</td></tr>
+<tr><td>onLoadProgress</td><td>func(float64)</td><td>Load progress (0-1)</td></tr>
+<tr><td>onNavigationStateChange</td><td>func(map)</td><td>URL changes</td></tr>
+<tr><td>onError</td><td>func(string)</td><td>Load error</td></tr>
+<tr><td>onHttpError</td><td>func(map)</td><td>HTTP 4xx/5xx</td></tr>
+</table>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

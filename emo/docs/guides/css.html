@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Styling — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html" class="active">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>CSS Styling</h1>
+<p>emo uses standard CSS syntax with <code>dp</code>/<code>sp</code> units.</p>
+<h2>Example</h2>
+<pre><code>.container {
+  background: #FFFFFF;
+  padding: 24dp;
+  spacing: 16dp;
+}
+.title {
+  font-size: 28sp;
+  font-weight: bold;
+  color: #333333;
+}</code></pre>
+<h2>Using CSS in .em</h2>
+<pre><code>&lt;Column className="container"&gt;
+  &lt;Text className="title"&gt;Hello&lt;/Text&gt;
+&lt;/Column&gt;</code></pre>
+<h2>Supported properties</h2>
+<table>
+<tr><th>CSS property</th><th>DSL prop</th><th>Type</th></tr>
+<tr><td>background</td><td>Bg()</td><td>hex color</td></tr>
+<tr><td>color</td><td>Fg()</td><td>hex color</td></tr>
+<tr><td>padding</td><td>Padding()</td><td>dp</td></tr>
+<tr><td>spacing</td><td>Spacing()</td><td>dp</td></tr>
+<tr><td>font-size</td><td>Font()</td><td>sp</td></tr>
+<tr><td>font-weight</td><td>Prop("fontWeight")</td><td>"normal"/"bold"</td></tr>
+<tr><td>width</td><td>Width()</td><td>dp/"match"/"wrap"</td></tr>
+<tr><td>height</td><td>Height()</td><td>dp/"match"/"wrap"</td></tr>
+</table>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

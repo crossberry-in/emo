@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building APKs — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html" class="active">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>Building APKs</h1>
+<h2>Development (live reload)</h2>
+<pre><code>emo start     # dev server
+emo go        # launch on device</code></pre>
+<h2>Production build</h2>
+<pre><code>emo build</code></pre>
+<p>This generates:</p>
+<ul>
+<li><code>__emo_gen__/emo_gen.go</code> — transpiled Go source</li>
+<li><code>.emo/build/emo-bundle.json</code> — production bundle (embedded runtime)</li>
+<li><code>.emo/build/EmoRoot.kt</code> — Kotlin Compose source</li>
+</ul>
+<h2>Assemble the APK</h2>
+<ol>
+<li>Copy <code>EmoRoot.kt</code> into an Android Studio project</li>
+<li>Run <code>./gradlew assembleDebug</code></li>
+<li>APK at <code>app/build/outputs/apk/debug/app-debug.apk</code></li>
+</ol>
+<h2>Production mode (embedded runtime)</h2>
+<p>The <code>emo-bundle.json</code> is loaded by the embedded runtime at app startup. The app runs entirely on-device with no dev server connection needed.</p>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

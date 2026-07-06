@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>emo — Expo-like Android development in Go</title>
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="logo">
+    <div class="e">e</div>
+    emo
+  </a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+    <a href="https://github.com/crossberry-in/emo-go">emo Go</a>
+  </div>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="index.html">Introduction</a>
+    <a href="guides/install.html">Installation</a>
+    <a href="guides/quickstart.html">Quick Start</a>
+    <a href="guides/project-structure.html">Project Structure</a>
+
+    <h3>The .em Language</h3>
+    <a href="guides/em-syntax.html">Syntax Reference</a>
+    <a href="guides/css.html">CSS Styling</a>
+    <a href="guides/state.html">State & Hooks</a>
+    <a href="guides/components.html">Components</a>
+
+    <h3>UI Elements</h3>
+    <a href="guides/elements.html">All Elements</a>
+    <a href="guides/webview.html">WebView</a>
+    <a href="guides/navigation.html">Navigation</a>
+
+    <h3>Features</h3>
+    <a href="guides/live-reload.html">Live Reload</a>
+    <a href="guides/android-sync.html">Android Sync</a>
+    <a href="guides/plugins.html">Plugins</a>
+    <a href="guides/haptics.html">Haptics</a>
+    <a href="guides/securestore.html">SecureStore</a>
+    <a href="guides/linking.html">Linking</a>
+
+    <h3>Deploy</h3>
+    <a href="guides/build.html">Building APKs</a>
+    <a href="guides/troubleshooting.html">Troubleshooting</a>
+    <a href="guides/cli.html">CLI Reference</a>
+  </nav>
+
+  <main class="content">
+    <div class="hero">
+      <h1>emo</h1>
+      <p>Expo-like Android development framework in Go. Write <code style="background:rgba(255,255,255,0.1);color:#9B6FFF;padding:2px 6px;border-radius:4px">.em</code> files, see them live on Android. No JavaScript, no Gradle rebuilds.</p>
+      <div class="badges">
+        <span class="badge">Go 1.22+</span>
+        <span class="badge">Kotlin / Jetpack Compose</span>
+        <span class="badge">v0.2.2</span>
+        <span class="badge">MIT License</span>
+      </div>
+    </div>
+
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span class="cmd">curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash</span>
+      <button class="copy">Copy</button>
+    </div>
+
+    <h2>Why emo?</h2>
+    <table>
+      <tr><th>Approach</th><th>Reload time</th><th>Language</th><th>Native UI?</th></tr>
+      <tr><td>Native Android (Kotlin + Gradle)</td><td>5–20s</td><td>Kotlin</td><td>✅</td></tr>
+      <tr><td>Expo (React Native)</td><td>&lt;1s</td><td>JS/TS</td><td>❌ Bridge</td></tr>
+      <tr><td>Flutter</td><td>1–2s</td><td>Dart</td><td>❌ Custom</td></tr>
+      <tr><td><strong>emo</strong></td><td><strong>&lt;1s</strong></td><td><strong>Go</strong></td><td>✅ Compose</td></tr>
+    </table>
+
+    <h2>Quick Start</h2>
+    <pre><code># Install emo
+curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+
+# Create your first app
+emo create my-app
+cd my-app
+
+# Start the dev server (live reload)
+emo start
+
+# In another terminal, launch on Android
+emo go</code></pre>
+
+    <h2>Explore the docs</h2>
+    <div class="card-grid">
+      <a href="guides/install.html" class="card">
+        <h4>📋 Installation</h4>
+        <p>One-line curl install, build from source, custom directories</p>
+      </a>
+      <a href="guides/quickstart.html" class="card">
+        <h4>🚀 Quick Start</h4>
+        <p>Create, run, and edit your first emo app in under 5 minutes</p>
+      </a>
+      <a href="guides/em-syntax.html" class="card">
+        <h4>📝 .em Syntax</h4>
+        <p>Learn the JSX-like language: components, state, render blocks</p>
+      </a>
+      <a href="guides/elements.html" class="card">
+        <h4>🎨 UI Elements</h4>
+        <p>27 native elements: WebView, Switch, Slider, Card, and more</p>
+      </a>
+      <a href="guides/webview.html" class="card">
+        <h4>🌐 WebView</h4>
+        <p>Full react-native-webview parity: JS injection, messages, events</p>
+      </a>
+      <a href="guides/navigation.html" class="card">
+        <h4>🧭 Navigation</h4>
+        <p>expo-router-style file-based routing with dynamic params</p>
+      </a>
+      <a href="guides/android-sync.html" class="card">
+        <h4>📱 Android Sync</h4>
+        <p>Auto-generate native Kotlin/XML in your android/ folder</p>
+      </a>
+      <a href="guides/build.html" class="card">
+        <h4>📦 Building APKs</h4>
+        <p>Production builds with embedded runtime — no server needed</p>
+      </a>
+    </div>
+
+    <h2>Key features</h2>
+    <ul>
+      <li><strong>.em custom language</strong> — Svelte/Vue-style single-file components with JSX-like syntax</li>
+      <li><strong>27 native UI elements</strong> — Column, Row, Text, Button, WebView, Switch, Slider, Card, Picker, TabBar, and more</li>
+      <li><strong>Live reload &lt; 150ms</strong> — edit .em/.css, save, device updates instantly</li>
+      <li><strong>CSS styling</strong> — standard CSS with dp/sp units, className attributes</li>
+      <li><strong>File-based routing</strong> — app/index.em, app/(tabs)/_layout.em, app/[id].em</li>
+      <li><strong>Navigation API</strong> — Navigate, Back, Replace, dynamic route params</li>
+      <li><strong>Android sync</strong> — auto-generates native Kotlin @Composable + XML resources</li>
+      <li><strong>Production mode</strong> — embedded runtime runs on-device with no server</li>
+      <li><strong>Plugin system</strong> — camera, location, storage, haptics, linking</li>
+      <li><strong>emo Go preview app</strong> — auto-detects dev servers, carousel, virtual preview</li>
+      <li><strong>22 installable components</strong> — emo install WebView, emo install Card, etc.</li>
+      <li><strong>5 project templates</strong> — default, blank, counter, todo, navigation</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>💡 Tip:</strong> Run <code>emo templates</code> to see available project templates, or <code>emo components</code> to browse installable components from the <a href="https://github.com/crossberry-in/emo-templates">emo-templates repo</a>.</p>
+    </div>
+
+    <h2>Architecture</h2>
+    <pre><code>┌─────────────────────┐  WebSocket (vtree JSON)  ┌──────────────────────┐
+│  emo dev server     │ ◄──────────────────────► │  emo Go app          │
+│  (on your computer) │   events (click, etc.)   │  (on Android device) │
+└─────────────────────┘                          └──────────────────────┘
+         │                                                  │
+         │ emo build                                        │ Jetpack Compose
+         ▼                                                  ▼
+┌─────────────────────┐                          ┌──────────────────────┐
+│  Production bundle  │  → embedded runtime →    │  Native UI           │
+│  (emo-bundle.json)  │     runs on-device       │  (no server needed)  │
+└─────────────────────┘                          └──────────────────────┘</code></pre>
+
+    <h2>Community</h2>
+    <ul>
+      <li><a href="https://github.com/crossberry-in/emo">Framework source</a> — the emo CLI, DSL, dev server, transpiler</li>
+      <li><a href="https://github.com/crossberry-in/emo-go">emo Go app</a> — the preview app (Expo Go equivalent)</li>
+      <li><a href="https://github.com/crossberry-in/emo-templates">Templates & components</a> — project templates and installable components</li>
+      <li><a href="https://github.com/crossberry-in/emo/releases">Releases</a> — download pre-built binaries for all platforms</li>
+    </ul>
+  </main>
+</div>
+
+<div class="footer">
+  Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> ·
+  <a href="https://github.com/crossberry-in/emo">GitHub</a> ·
+  MIT License
+</div>
+
+<script src="assets/script.js"></script>
+</body>
+</html>

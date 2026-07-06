@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Reference — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html" class="active">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>CLI Reference</h1>
+<h2>emo create [name]</h2>
+<p>Interactive project creation (like create-expo-app).</p>
+<pre><code>emo create my-app
+emo create my-app --template counter</code></pre>
+<h2>emo init [name]</h2>
+<p>Create a project from a template.</p>
+<pre><code>emo init myapp                          # uses "default" template
+emo init myapp --template counter
+emo init myapp --package com.example.myapp</code></pre>
+<h2>emo start</h2>
+<p>Start the dev server with live reload.</p>
+<pre><code>emo start                    # default port 7575
+emo start --port 8080        # specific port
+emo start --launch           # auto-launch on device
+emo start --sync-android=false  # disable native codegen</code></pre>
+<h2>emo go</h2>
+<p>Launch emo Go preview app on a connected device.</p>
+<pre><code>emo go
+emo go --apk /path/to/emo-go.apk</code></pre>
+<h2>emo build</h2>
+<p>Generate production bundle + Kotlin source.</p>
+<pre><code>emo build
+emo build --out app.apk --package dev.emo.myapp</code></pre>
+<h2>emo templates</h2>
+<p>List available project templates from GitHub.</p>
+<h2>emo components</h2>
+<p>List installable components.</p>
+<h2>emo install &lt;name&gt;</h2>
+<p>Install a component from the registry.</p>
+<pre><code>emo install WebView
+emo install Card</code></pre>
+<h2>emo plugins</h2>
+<p>List registered plugins.</p>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

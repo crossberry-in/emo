@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html" class="active">Installation</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State & Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+    <h1>Installation</h1>
+    <p>emo runs on Linux, macOS, and Windows (amd64/arm64). Install it with a single command.</p>
+
+    <h2>One-line install (recommended)</h2>
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span class="cmd">curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash</span>
+      <button class="copy">Copy</button>
+    </div>
+    <p>This downloads a pre-built binary for your platform and installs it to <code>~/.local/bin/emo</code>.</p>
+
+    <h2>Install a specific version</h2>
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span class="cmd">curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash -s -- v0.2.2</span>
+      <button class="copy">Copy</button>
+    </div>
+
+    <h2>Install to a custom directory</h2>
+    <pre><code>EMO_INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash</code></pre>
+
+    <h2>Authenticated install (avoids rate limits)</h2>
+    <pre><code>GITHUB_TOKEN=ghp_xxx curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash</code></pre>
+
+    <h2>Build from source</h2>
+    <pre><code>git clone https://github.com/crossberry-in/emo
+cd emo
+go build -o /usr/local/bin/emo ./cmd/emo</code></pre>
+    <p>Requires Go 1.22+.</p>
+
+    <h2>Verify installation</h2>
+    <pre><code>emo --help
+emo templates
+emo components</code></pre>
+
+    <h2>Install the emo Go preview app</h2>
+    <p>Download the APK from the <a href="https://github.com/crossberry-in/emo-go/releases">emo-go releases page</a> and install on your Android device:</p>
+    <pre><code>adb install -r emo-go-v0.2.0.apk</code></pre>
+
+    <h2>Requirements</h2>
+    <ul>
+      <li><strong>Go 1.22+</strong> — for building from source</li>
+      <li><strong>Android SDK + Platform Tools (adb)</strong> — for <code>emo go</code></li>
+      <li><strong>Android Studio or Gradle</strong> — for building the emo Go preview APK</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>💡 Tip:</strong> If <code>emo</code> is not found after install, add <code>~/.local/bin</code> to your PATH:</p>
+      <pre><code>echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc</code></pre>
+    </div>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>

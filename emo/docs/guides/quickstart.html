@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Start — emo docs</title>
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236C47FF'/><text x='50' y='72' font-size='64' font-weight='bold' fill='white' text-anchor='middle'>e</text></svg>">
+</head>
+<body>
+<div class="topbar">
+  <a href="../index.html" class="logo"><div class="e">e</div>emo</a>
+  <div class="nav">
+    <a href="https://github.com/crossberry-in/emo">GitHub</a>
+    <a href="https://github.com/crossberry-in/emo/releases">Releases</a>
+    <a href="https://github.com/crossberry-in/emo-templates">Templates</a>
+  </div>
+</div>
+<div class="layout">
+  <nav class="sidebar">
+    <h3>Getting Started</h3>
+    <a href="../index.html">Introduction</a>
+    <a href="install.html">Installation</a>
+    <a href="quickstart.html" class="active">Quick Start</a>
+    <a href="project-structure.html">Project Structure</a>
+    <h3>The .em Language</h3>
+    <a href="em-syntax.html">Syntax Reference</a>
+    <a href="css.html">CSS Styling</a>
+    <a href="state.html">State &amp; Hooks</a>
+    <a href="components.html">Components</a>
+    <h3>UI Elements</h3>
+    <a href="elements.html">All Elements</a>
+    <a href="webview.html">WebView</a>
+    <a href="navigation.html">Navigation</a>
+    <h3>Features</h3>
+    <a href="live-reload.html">Live Reload</a>
+    <a href="android-sync.html">Android Sync</a>
+    <a href="plugins.html">Plugins</a>
+    <a href="haptics.html">Haptics</a>
+    <a href="securestore.html">SecureStore</a>
+    <a href="linking.html">Linking</a>
+    <h3>Deploy</h3>
+    <a href="build.html">Building APKs</a>
+    <a href="troubleshooting.html">Troubleshooting</a>
+    <a href="cli.html">CLI Reference</a>
+  </nav>
+  <main class="content">
+<h1>Quick Start</h1>
+<p>Create your first emo app and see it live on Android in under 5 minutes.</p>
+<h2>1. Install emo</h2>
+<div class="install-cmd"><span class="prompt">$</span><span class="cmd">curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash</span><button class="copy">Copy</button></div>
+<h2>2. Create your app</h2>
+<pre><code>emo create my-app
+cd my-app</code></pre>
+<h2>3. Start the dev server</h2>
+<pre><code>emo start</code></pre>
+<h2>4. Launch on Android</h2>
+<pre><code>emo go</code></pre>
+<h2>5. Edit and see changes instantly</h2>
+<pre><code>// app/index.em
+component App {
+  state count = 0
+  render {
+    &lt;Column spacing={16} padding={24}&gt;
+      &lt;Text fontSize={28} fontWeight="bold"&gt;Hello, emo!&lt;/Text&gt;
+      &lt;Text fontSize={48}&gt;{count}&lt;/Text&gt;
+      &lt;Button onClick={() =&gt; count = count + 1}&gt;Increment&lt;/Button&gt;
+    &lt;/Column&gt;
+  }
+}
+style "./index.css"</code></pre>
+<div class="callout"><p><strong>🎉 That's it!</strong> Save the file — your device updates instantly.</p></div>
+  </main>
+</div>
+<div class="footer">Built with <span class="heart">♥</span> by <a href="https://crossberry.vercel.app">crossberry</a> · MIT License</div>
+<script src="../assets/script.js"></script>
+</body>
+</html>
