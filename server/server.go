@@ -54,6 +54,11 @@ type Server struct {
         // loads the project's main package.
         RootFactory func() dsl.Element
 
+        // OnFileChange is called after a .em/.css file change is detected and
+        // the vtree has been re-rendered. The CLI uses this to sync native code
+        // into the android/ folder via the syncer package.
+        OnFileChange func()
+
         // Current vtree state (last pushed). Used for diffing on the next push.
         current dsl.Element
 
@@ -219,6 +224,12 @@ func (s *Server) Reload(reason string) {
         newTree := s.RootFactory()
         old := s.current
         s.current = newTree
+
+        // If this was a file change (not a state mutation), sync native code
+        // to the android/ folder.
+        if s.OnFileChange != nil && !isStateMutation(reason) {
+                go s.OnFileChange()
+        }
 
         if old.ID == "" {
                 // First push: send full vtree.

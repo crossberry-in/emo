@@ -13,6 +13,7 @@ import (
         "github.com/emo-framework/emo/dsl"
         "github.com/emo-framework/emo/eml"
         "github.com/emo-framework/emo/server"
+        "github.com/emo-framework/emo/syncer"
         "github.com/spf13/cobra"
 )
 
@@ -21,6 +22,8 @@ func newStartCmd() *cobra.Command {
         var watch string
         var launchEmoGo bool
         var emoGoApk string
+        var syncAndroid bool
+        var pkg string
         c := &cobra.Command{
                 Use:   "start",
                 Short: "Start the emo dev server with live reload",
@@ -58,6 +61,14 @@ func newStartCmd() *cobra.Command {
                         srv := server.New(dir, port)
                         srv.RootFactory = root
 
+                        // Sync .em/.css → android/ native Kotlin + XML on startup
+                        // and on every file change.
+                        if syncAndroid {
+                                sync := syncer.New(dir, pkg)
+                                sync.SyncAndLog()
+                                srv.OnFileChange = func() { sync.SyncAndLog() }
+                        }
+
                         if launchEmoGo {
                                 go func() {
                                         if err := srv.LaunchOnDevice(emoGoApk, "dev.emo.go/.MainActivity"); err != nil {
@@ -83,6 +94,8 @@ func newStartCmd() *cobra.Command {
         c.Flags().StringVar(&watch, "watch", ".", "Directory to watch for live reload")
         c.Flags().BoolVar(&launchEmoGo, "launch", false, "Auto-install & launch emo Go preview app on a connected device")
         c.Flags().StringVar(&emoGoApk, "apk", "", "Path to emo Go preview APK to install before launching")
+        c.Flags().BoolVar(&syncAndroid, "sync-android", true, "Auto-generate native Kotlin/XML in android/ on file changes (default: on)")
+        c.Flags().StringVar(&pkg, "package", "dev.emo.app", "Kotlin package for generated android/ code")
         return c
 }
 
