@@ -164,3 +164,46 @@ Stage Summary:
 - Pre-built binaries available at https://github.com/crossberry-in/emo/releases/tag/v0.1.0
 - Works on Linux, macOS, Windows (amd64, arm64)
 - Falls back to building from source if no binary available
+
+---
+Task ID: 6
+Agent: main
+Task: Build full Expo-like SDK experience with emo create + default template
+
+Work Log:
+- Built emo create command (cli/create.go):
+  - Interactive prompts: app name, SDK version (like create-expo-app)
+  - Downloads 'default' template from emo-templates repo
+  - Personalizes emo.json, emo.toml, android/app/build.gradle.kts with app name
+  - Shows Expo-style progress messages and next steps
+  - Fixed: handles both relative and absolute project paths
+- Created full 'default' template (43 files) mirroring Expo's default template:
+  - app/ with file-based routing: (tabs)/_layout.em, (tabs)/index.em, (tabs)/explore.em, _layout.em, modal.em, +not-found.em
+  - components/ with: themed-text, themed-view, hello-wave, external-link, ui/collapsible, ui/icon-symbol
+  - hooks/ with: use-color-scheme, use-theme-color
+  - scripts/ with: reset-project
+  - assets/images/ with README
+  - android/ per-project folder with:
+    - Kotlin MainActivity.kt (376 lines) — connects to emo dev server, renders vtree as Jetpack Compose
+    - Gradle build files (build.gradle.kts, settings.gradle.kts, gradle.properties, gradle-wrapper.properties)
+    - AndroidManifest.xml, themes.xml, strings.xml
+  - emo.json (like Expo's app.json with plugins, android adaptiveIcon, edgeToEdgeEnabled)
+  - emo.toml, README.md, CLAUDE.md, AGENTS.md, .gitignore
+- Updated templates.json to include 'default' as first entry
+- Pushed default template to github.com/crossberry-in/emo-templates
+- Pushed emo create command to github.com/crossberry-in/emo
+- Created v0.1.1 GitHub release with 5 rebuilt binaries (linux/darwin/windows × amd64/arm64)
+- Updated install.sh fallback version to v0.1.1
+- Verified end-to-end:
+  - emo create my-final-app → creates 43-file project with full structure ✓
+  - emo.json personalized with app name ✓
+  - android/app/build.gradle.kts personalized with namespace+applicationId ✓
+  - curl install → downloads v0.1.1 binary → emo create works ✓
+
+Stage Summary:
+- emo create now mirrors create-expo-app: interactive prompts, full template, next steps
+- Default template has file-based routing (app/), themed components, hooks, per-project android/ folder
+- Per-project android/ folder includes Kotlin MainActivity that connects to emo dev server
+- All .em files use JSX-like syntax (no .tsx)
+- Release v0.1.1 published at https://github.com/crossberry-in/emo/releases/tag/v0.1.1
+- Install: curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash

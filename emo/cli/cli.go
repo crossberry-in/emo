@@ -39,6 +39,7 @@ In another terminal:
                 SilenceUsage: true,
         }
         root.AddCommand(newInitCmd())
+        root.AddCommand(newCreateCmd())
         root.AddCommand(newStartCmd())
         root.AddCommand(newBuildCmd())
         root.AddCommand(newGoCmd())
