@@ -296,6 +296,161 @@ func Options(opts ...string) Option { return Prop("options", opts) }
 // Name sets the icon name for Icon elements.
 func Name(n string) Option { return Prop("name", n) }
 
+// ---------------------------------------------------------------------------
+// WebView options (parity with react-native-webview)
+// ---------------------------------------------------------------------------
+
+// InjectedJavaScript — JS code injected into the web page after it loads.
+// The result can be sent back to Go via window.EmoGo.postMessage().
+func InjectedJavaScript(js string) Option {
+        return Prop("injectedJavaScript", js)
+}
+
+// InjectedJavaScriptBeforeContentLoaded — JS injected before the page loads.
+func InjectedJavaScriptBeforeContentLoaded(js string) Option {
+        return Prop("injectedJavaScriptBeforeContentLoaded", js)
+}
+
+// UserAgent sets a custom User-Agent string for the WebView.
+func UserAgent(ua string) Option { return Prop("userAgent", ua) }
+
+// JavaScriptEnabled enables or disables JavaScript in the WebView (default: true).
+func JavaScriptEnabled(enabled bool) Option { return Prop("javaScriptEnabled", enabled) }
+
+// DomStorageEnabled enables DOM storage (localStorage, sessionStorage).
+func DomStorageEnabled(enabled bool) Option { return Prop("domStorageEnabled", enabled) }
+
+// CacheEnabled enables the WebView cache (default: true).
+func CacheEnabled(enabled bool) Option { return Prop("cacheEnabled", enabled) }
+
+// ScalesPageToFit enables auto-fit of the page to the screen width.
+func ScalesPageToFit(enabled bool) Option { return Prop("scalesPageToFit", enabled) }
+
+// GeolocationEnabled enables geolocation API in the WebView.
+func GeolocationEnabled(enabled bool) Option { return Prop("geolocationEnabled", enabled) }
+
+// AllowFileAccess enables file:// URL access.
+func AllowFileAccess(enabled bool) Option { return Prop("allowFileAccess", enabled) }
+
+// AllowFileAccessFromFileURLs enables file:// access from file:// URLs.
+func AllowFileAccessFromFileURLs(enabled bool) Option { return Prop("allowFileAccessFromFileURLs", enabled) }
+
+// TextZoom sets the text zoom percentage (default: 100).
+func TextZoom(percent int) Option { return Prop("textZoom", percent) }
+
+// MinimumFontSize sets the minimum font size in sp.
+func MinimumFontSize(sp int) Option { return Prop("minimumFontSize", sp) }
+
+// HTML loads a raw HTML string instead of a URL.
+// Use this instead of Source() to render inline HTML.
+func HTML(html string) Option { return Prop("html", html) }
+
+// Method sets the HTTP method for the WebView request (GET/POST).
+func Method(m string) Option { return Prop("method", m) }
+
+// Headers sets custom HTTP headers for the WebView request.
+func Headers(h map[string]string) Option { return Prop("headers", h) }
+
+// Body sets the POST body for the WebView request.
+func Body(b string) Option { return Prop("body", b) }
+
+// MediaPlaybackRequiresUserGesture — if true, media playback requires a user
+// gesture (tap). If false, media can autoplay.
+func MediaPlaybackRequiresUserGesture(requires bool) Option {
+        return Prop("mediaPlaybackRequiresUserGesture", requires)
+}
+
+// AllowsFullscreenVideo — if true, allows video to play in fullscreen.
+func AllowsFullscreenVideo(allows bool) Option { return Prop("allowsFullscreenVideo", allows) }
+
+// OnMessage attaches a handler for messages from the web page.
+// The web page sends messages via window.EmoGo.postMessage(data).
+func OnMessage(fn func(string)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        s, _ := payload.(string)
+                        fn(s)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "message", Token: token})
+        }
+}
+
+// OnLoadStart attaches a handler fired when the WebView starts loading a page.
+func OnLoadStart(fn func(url string)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        s, _ := payload.(string)
+                        fn(s)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "loadStart", Token: token})
+        }
+}
+
+// OnLoadEnd attaches a handler fired when the WebView finishes loading.
+func OnLoadEnd(fn func(url string)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        s, _ := payload.(string)
+                        fn(s)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "loadEnd", Token: token})
+        }
+}
+
+// OnLoadProgress attaches a handler fired with load progress (0.0 to 1.0).
+func OnLoadProgress(fn func(float64)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        f, _ := payload.(float64)
+                        fn(f)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "loadProgress", Token: token})
+        }
+}
+
+// OnNavigationStateChange attaches a handler fired when navigation state
+// changes (new URL, loading, canGoBack, canGoForward).
+func OnNavigationStateChange(fn func(map[string]any)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        m, _ := payload.(map[string]any)
+                        fn(m)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "navigationStateChange", Token: token})
+        }
+}
+
+// OnError attaches a handler fired when the WebView encounters an error.
+func OnError(fn func(string)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        s, _ := payload.(string)
+                        fn(s)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "error", Token: token})
+        }
+}
+
+// OnHttpError attaches a handler for HTTP errors (status >= 400).
+func OnHttpError(fn func(map[string]any)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        m, _ := payload.(map[string]any)
+                        fn(m)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "httpError", Token: token})
+        }
+}
+
+// OnContentProcessDidTerminate attaches a handler for content process crashes
+// (iOS only, but the prop is available for cross-platform code).
+func OnContentProcessDidTerminate(fn func()) Option {
+        return func(e *Element) {
+                token := RegisterHandlerNoArg(fn)
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "contentProcessTerminate", Token: token})
+        }
+}
+
 // OnToggle attaches a handler for Switch toggle events.
 func OnToggle(fn func(bool)) Option {
         return func(e *Element) {
