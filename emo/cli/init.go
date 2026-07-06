@@ -1,12 +1,12 @@
 package cli
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"text/template"
+        "fmt"
+        "os"
+        "path/filepath"
+        "text/template"
 
-	"github.com/spf13/cobra"
+        "github.com/spf13/cobra"
 )
 
 const appEmTemplate = `// {{.Name}}.em — emo 0.1 SDK
@@ -93,61 +93,66 @@ __emo_gen__/
 `
 
 func newInitCmd() *cobra.Command {
-	var pkg string
-	c := &cobra.Command{
-		Use:   "init [name]",
-		Short: "Create a new emo project",
-		Args:  cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			name := args[0]
-			if pkg == "" {
-				pkg = "dev.emo." + slug(name)
-			}
-			return initProject(name, pkg)
-		},
-	}
-	c.Flags().StringVar(&pkg, "package", "", "Kotlin package name (default dev.emo.<slug>)")
-	return c
+        var pkg string
+        var template string
+        c := &cobra.Command{
+                Use:   "init [name]",
+                Short: "Create a new emo project",
+                Args:  cobra.ExactArgs(1),
+                RunE: func(cmd *cobra.Command, args []string) error {
+                        name := args[0]
+                        if pkg == "" {
+                                pkg = "dev.emo." + slug(name)
+                        }
+                        if template != "" {
+                                return templateInit(name, template)
+                        }
+                        return initProject(name, pkg)
+                },
+        }
+        c.Flags().StringVar(&pkg, "package", "", "Kotlin package name (default dev.emo.<slug>)")
+        c.Flags().StringVar(&template, "template", "", "Project template to use (run `emo templates` to list)")
+        return c
 }
 
 func initProject(name, pkg string) error {
-	dir := name
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("mkdir: %w", err)
-	}
+        dir := name
+        if err := os.MkdirAll(dir, 0o755); err != nil {
+                return fmt.Errorf("mkdir: %w", err)
+        }
 
-	data := map[string]string{"Name": name, "Slug": slug(name)}
+        data := map[string]string{"Name": name, "Slug": slug(name)}
 
-	// App.em
-	appFile := filepath.Join(dir, "App.em")
-	if exists(appFile) {
-		return fmt.Errorf("refusing to overwrite existing %s", appFile)
-	}
-	if err := writeTemplate(appFile, appEmTemplate, data); err != nil {
-		return err
-	}
+        // App.em
+        appFile := filepath.Join(dir, "App.em")
+        if exists(appFile) {
+                return fmt.Errorf("refusing to overwrite existing %s", appFile)
+        }
+        if err := writeTemplate(appFile, appEmTemplate, data); err != nil {
+                return err
+        }
 
-	// App.css
-	if err := writeTemplate(filepath.Join(dir, "App.css"), appCssTemplate, data); err != nil {
-		return err
-	}
+        // App.css
+        if err := writeTemplate(filepath.Join(dir, "App.css"), appCssTemplate, data); err != nil {
+                return err
+        }
 
-	// Header.em (example imported component)
-	if err := writeTemplate(filepath.Join(dir, "Header.em"), headerEmTemplate, data); err != nil {
-		return err
-	}
+        // Header.em (example imported component)
+        if err := writeTemplate(filepath.Join(dir, "Header.em"), headerEmTemplate, data); err != nil {
+                return err
+        }
 
-	// emo.toml
-	if err := writeTemplate(filepath.Join(dir, "emo.toml"), configTemplate, data); err != nil {
-		return err
-	}
+        // emo.toml
+        if err := writeTemplate(filepath.Join(dir, "emo.toml"), configTemplate, data); err != nil {
+                return err
+        }
 
-	// .gitignore
-	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignore), 0o644); err != nil {
-		return err
-	}
+        // .gitignore
+        if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignore), 0o644); err != nil {
+                return err
+        }
 
-	fmt.Printf(`Created emo 0.1 project "%s".
+        fmt.Printf(`Created emo 0.1 project "%s".
 
 Next steps:
   cd %s
@@ -159,45 +164,45 @@ In another terminal, with an Android emulator running or a device connected via 
 The emo Go preview app will install and connect to your dev server.
 Edit App.em and save — your UI updates instantly.
 `, name, name)
-	return nil
+        return nil
 }
 
 func writeTemplate(path, tmpl string, data any) error {
-	t, err := template.New("t").Parse(tmpl)
-	if err != nil {
-		return err
-	}
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return t.Execute(f, data)
+        t, err := template.New("t").Parse(tmpl)
+        if err != nil {
+                return err
+        }
+        f, err := os.Create(path)
+        if err != nil {
+                return err
+        }
+        defer f.Close()
+        return t.Execute(f, data)
 }
 
 func exists(p string) bool {
-	_, err := os.Stat(p)
-	return err == nil
+        _, err := os.Stat(p)
+        return err == nil
 }
 
 func slug(s string) string {
-	out := ""
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
-			out += string(toLower(r))
-		} else {
-			out += "_"
-		}
-	}
-	if out == "" {
-		out = "app"
-	}
-	return out
+        out := ""
+        for _, r := range s {
+                if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+                        out += string(toLower(r))
+                } else {
+                        out += "_"
+                }
+        }
+        if out == "" {
+                out = "app"
+        }
+        return out
 }
 
 func toLower(r rune) rune {
-	if r >= 'A' && r <= 'Z' {
-		return r + 32
-	}
-	return r
+        if r >= 'A' && r <= 'Z' {
+                return r + 32
+        }
+        return r
 }

@@ -97,3 +97,40 @@ Stage Summary:
 - CSS support: className attributes on elements, .css files with standard CSS syntax
 - Live reload works: edit .em or .css, save, dev server re-transpiles and pushes new vtree
 - Deliverables at /home/z/my-project/download/: emo-framework.zip (107KB), emo-go-preview.apk (8.5MB)
+
+---
+Task ID: 4
+Agent: main
+Task: Push emo to GitHub + build template/component install system (like Expo)
+
+Work Log:
+- Verified GitHub token (user: crossberry-in)
+- Created/verified two repos: crossberry-in/emo and crossberry-in/emo-templates
+- Built cli/template.go: emo templates (list), emo init --template <name> (download)
+  - Downloads tarball from GitHub API, extracts template subdirectory
+  - Reads templates.json manifest from emo-templates repo
+- Built cli/install.go: emo components (list), emo install <name>
+  - Uses GitHub Contents API to list .em/.css files in component dir
+  - Downloads files into components/<name>/ directory
+  - GITHUB_TOKEN env var support for authenticated API calls
+- Created emo-templates repo with:
+  - 4 templates: blank, counter, todo, navigation (each has App.em, App.css, emo.toml)
+  - 6 components: Card, Modal, Form, List, Loading, EmptyState (each has .em + .css)
+  - templates.json and components.json manifests
+  - README.md with usage instructions
+- Pushed emo framework to github.com/crossberry-in/emo (main branch, public)
+- Pushed emo-templates to github.com/crossberry-in/emo-templates (main branch, public)
+- Verified end-to-end:
+  - emo templates → lists 4 templates from GitHub ✓
+  - emo init testapp --template counter → downloads and extracts counter template ✓
+  - emo components → lists 6 components from GitHub ✓
+  - emo install Card → downloads Card.em + Card.css into components/card/ ✓
+- Rebuilt emo-framework.zip (111 KB) with new CLI commands
+
+Stage Summary:
+- emo framework: https://github.com/crossberry-in/emo
+- emo templates: https://github.com/crossberry-in/emo-templates
+- New CLI commands: emo templates, emo init --template, emo components, emo install
+- Works exactly like Expo: create-expo-app --template + expo install
+- Deliverable at /home/z/my-project/download/emo-framework.zip (111 KB)
+- SECURITY: user's GitHub token was exposed in chat — should be revoked immediately
