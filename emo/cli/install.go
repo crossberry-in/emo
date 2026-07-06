@@ -21,7 +21,8 @@ const ComponentsBranch = "main"
 var GitHubToken = os.Getenv("GITHUB_TOKEN")
 
 // ghGet performs an authenticated GET request to the GitHub API if a token
-// is available, otherwise an unauthenticated request.
+// is available, otherwise an unauthenticated request. Uses the shared
+// httpClient (which respects EMO_INSECURE and system CA certs).
 func ghGet(url string) (*http.Response, error) {
         req, err := http.NewRequest("GET", url, nil)
         if err != nil {
@@ -31,7 +32,7 @@ func ghGet(url string) (*http.Response, error) {
                 req.Header.Set("Authorization", "token "+GitHubToken)
         }
         req.Header.Set("Accept", "application/vnd.github.v3+json")
-        return http.DefaultClient.Do(req)
+        return httpClient.Do(req)
 }
 
 // Component describes an installable component from emo-templates repo.
@@ -68,9 +69,9 @@ func newComponentsCmd() *cobra.Command {
 // listComponents fetches the component list from the emo-templates repo.
 func listComponents() error {
         url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/components.json", ComponentsRepo, ComponentsBranch)
-        resp, err := http.Get(url)
+        resp, err := httpGet(url)
         if err != nil {
-                return fmt.Errorf("fetch components: %w", err)
+                return fmt.Errorf("%s\n\nError: %w", tlsHelpMessage(), err)
         }
         defer resp.Body.Close()
         if resp.StatusCode != 200 {
@@ -95,9 +96,9 @@ func installComponent(name string) error {
 
         // Fetch components.json.
         url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/components.json", ComponentsRepo, ComponentsBranch)
-        resp, err := http.Get(url)
+        resp, err := httpGet(url)
         if err != nil {
-                return err
+                return fmt.Errorf("%s\n\nError: %w", tlsHelpMessage(), err)
         }
         defer resp.Body.Close()
         if resp.StatusCode != 200 {
@@ -159,9 +160,9 @@ func installComponent(name string) error {
                         continue
                 }
                 fmt.Printf("  downloading %s…\n", e.Name)
-                fresp, err := http.Get(e.URL)
+                fresp, err := httpGet(e.URL)
                 if err != nil {
-                        return err
+                        return fmt.Errorf("%s\n\nError: %w", tlsHelpMessage(), err)
                 }
                 if fresp.StatusCode != 200 {
                         fresp.Body.Close()

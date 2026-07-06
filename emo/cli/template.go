@@ -6,7 +6,6 @@ import (
         "encoding/json"
         "fmt"
         "io"
-        "net/http"
         "os"
         "path/filepath"
         "strings"
@@ -66,9 +65,9 @@ func templateInit(name, templateName string) error {
 // listTemplates fetches the template list from the emo-templates repo.
 func listTemplates() error {
         url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/templates.json", TemplatesRepo, TemplatesBranch)
-        resp, err := http.Get(url)
+        resp, err := httpGet(url)
         if err != nil {
-                return fmt.Errorf("fetch templates: %w", err)
+                return fmt.Errorf("%s\n\nError: %w", tlsHelpMessage(), err)
         }
         defer resp.Body.Close()
         if resp.StatusCode != 200 {
@@ -91,9 +90,9 @@ func listTemplates() error {
 func downloadTemplate(name string) (string, error) {
         // Fetch templates.json to find the path.
         url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/templates.json", TemplatesRepo, TemplatesBranch)
-        resp, err := http.Get(url)
+        resp, err := httpGet(url)
         if err != nil {
-                return "", err
+                return "", fmt.Errorf("%s\n\nError: %w", tlsHelpMessage(), err)
         }
         defer resp.Body.Close()
         if resp.StatusCode != 200 {
@@ -118,7 +117,7 @@ func downloadTemplate(name string) (string, error) {
         // Download the entire emo-templates repo as a tarball.
         tarURL := fmt.Sprintf("https://api.github.com/repos/%s/tarball/%s", TemplatesRepo, TemplatesBranch)
         fmt.Printf("  downloading %s…\n", tarURL)
-        tresp, err := http.Get(tarURL)
+        tresp, err := httpGet(tarURL)
         if err != nil {
                 return "", err
         }
