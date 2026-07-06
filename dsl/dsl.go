@@ -34,16 +34,36 @@ import (
 type ElementKind string
 
 const (
-        KindView     ElementKind = "view"     // generic container → Box
-        KindColumn   ElementKind = "column"   // vertical stack → Column
-        KindRow      ElementKind = "row"      // horizontal stack → Row
-        KindText     ElementKind = "text"     // label → Text
-        KindButton   ElementKind = "button"   // → Button
-        KindImage    ElementKind = "image"    // → Image
-        KindTextField ElementKind = "textField" // → TextField
-        KindSpacer   ElementKind = "spacer"   // → Spacer
-        KindDivider  ElementKind = "divider"  // → Divider
-        KindScaffold ElementKind = "scaffold" // → Scaffold (top-level)
+        KindView           ElementKind = "view"           // generic container → Box
+        KindColumn         ElementKind = "column"         // vertical stack → Column
+        KindRow            ElementKind = "row"            // horizontal stack → Row
+        KindText           ElementKind = "text"           // label → Text
+        KindButton         ElementKind = "button"         // → Button
+        KindImage          ElementKind = "image"          // → Image
+        KindTextField      ElementKind = "textField"      // → TextField (single-line input)
+        KindSpacer         ElementKind = "spacer"         // → Spacer
+        KindDivider        ElementKind = "divider"        // → Divider
+        KindScaffold       ElementKind = "scaffold"       // → Scaffold (top-level)
+
+        // --- New native UI elements (emo 0.1.2) ---
+        KindWebView        ElementKind = "webView"        // → AndroidView(WebView)
+        KindInput          ElementKind = "input"          // → OutlinedTextField (alias of TextField)
+        KindSafeAreaView   ElementKind = "safeAreaView"   // → Column with WindowInsets safe padding
+        KindScrollView     ElementKind = "scrollView"     // → verticalScroll Column
+        KindSwitch         ElementKind = "switch"         // → Switch (toggle)
+        KindSlider         ElementKind = "slider"         // → Slider (range 0..1)
+        KindActivityIndicator ElementKind = "activityIndicator" // → CircularProgressIndicator
+        KindPicker         ElementKind = "picker"         // → DropdownMenu
+        KindList           ElementKind = "list"           // → LazyColumn
+        KindCard           ElementKind = "card"           // → Card
+        KindCheckbox       ElementKind = "checkbox"       // → Checkbox
+        KindRadioButton    ElementKind = "radioButton"    // → RadioButton
+        KindIcon           ElementKind = "icon"           // → Icon (Material)
+        KindFab            ElementKind = "fab"            // → FloatingActionButton
+        KindProgress       ElementKind = "progress"       // → LinearProgressIndicator
+        KindTabBar         ElementKind = "tabBar"         // → TabRow
+        KindBottomNav      ElementKind = "bottomNav"      // → NavigationBar
+        KindTopBar         ElementKind = "topBar"         // → TopAppBar
 )
 
 // Element is a node in the virtual tree. It is JSON-serialisable so it can be
@@ -204,6 +224,99 @@ func Spacer(opts ...Option) Element { return el(KindSpacer, opts...) }
 
 // Divider creates a horizontal divider.
 func Divider(opts ...Option) Element { return el(KindDivider, opts...) }
+
+// --- New native UI element constructors (emo 0.1.2) ---
+
+// WebView embeds a web page (Android WebView via AndroidView).
+// Use Source("https://example.com") to set the URL.
+func WebView(opts ...Option) Element { return el(KindWebView, opts...) }
+
+// Input is an alias for TextField — a single-line text input.
+func Input(opts ...Option) Element { return el(KindInput, opts...) }
+
+// SafeAreaView adds padding for the status bar and navigation bar.
+func SafeAreaView(opts ...Option) Element { return el(KindSafeAreaView, opts...) }
+
+// ScrollView is a vertically-scrolling container.
+func ScrollView(opts ...Option) Element { return el(KindScrollView, opts...) }
+
+// Switch is a toggle (on/off).
+// Use Value(true/false) and OnChange(func(bool)) to control it.
+func Switch(opts ...Option) Element { return el(KindSwitch, opts...) }
+
+// Slider is a range input (0..1 by default).
+// Use Value(0.5) and OnChange(func(float64)) to control it.
+func Slider(opts ...Option) Element { return el(KindSlider, opts...) }
+
+// ActivityIndicator is a circular loading spinner.
+func ActivityIndicator(opts ...Option) Element { return el(KindActivityIndicator, opts...) }
+
+// Picker is a dropdown selector.
+// Use Options("a", "b", "c") to set the items.
+func Picker(opts ...Option) Element { return el(KindPicker, opts...) }
+
+// List is a lazy-loading vertical list.
+// Use Children(...) to set the items.
+func List(opts ...Option) Element { return el(KindList, opts...) }
+
+// Card is a Material Design card container.
+func Card(opts ...Option) Element { return el(KindCard, opts...) }
+
+// Checkbox is a boolean checkbox.
+func Checkbox(opts ...Option) Element { return el(KindCheckbox, opts...) }
+
+// RadioButton is a radio button.
+func RadioButton(opts ...Option) Element { return el(KindRadioButton, opts...) }
+
+// Icon is a Material Design icon.
+// Use Name("home") to set the icon.
+func Icon(opts ...Option) Element { return el(KindIcon, opts...) }
+
+// Fab is a floating action button.
+func Fab(opts ...Option) Element { return el(KindFab, opts...) }
+
+// Progress is a linear progress bar.
+func Progress(opts ...Option) Element { return el(KindProgress, opts...) }
+
+// TabBar is a horizontal tab row.
+func TabBar(opts ...Option) Element { return el(KindTabBar, opts...) }
+
+// BottomNav is a bottom navigation bar.
+func BottomNav(opts ...Option) Element { return el(KindBottomNav, opts...) }
+
+// TopBar is a top app bar.
+func TopBar(opts ...Option) Element { return el(KindTopBar, opts...) }
+
+// Value sets the value for elements like Switch, Slider, Progress.
+func Value(v any) Option { return Prop("value", v) }
+
+// Options sets the items for a Picker.
+func Options(opts ...string) Option { return Prop("options", opts) }
+
+// Name sets the icon name for Icon elements.
+func Name(n string) Option { return Prop("name", n) }
+
+// OnToggle attaches a handler for Switch toggle events.
+func OnToggle(fn func(bool)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        b, _ := payload.(bool)
+                        fn(b)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "change", Token: token})
+        }
+}
+
+// OnSlide attaches a handler for Slider value changes.
+func OnSlide(fn func(float64)) Option {
+        return func(e *Element) {
+                token := RegisterHandler(func(payload any) {
+                        f, _ := payload.(float64)
+                        fn(f)
+                })
+                e.Handlers = append(e.Handlers, HandlerRef{Event: "change", Token: token})
+        }
+}
 
 // ---------------------------------------------------------------------------
 // Hook implementation
