@@ -107,7 +107,14 @@ Requirements:
     download from https://emo.dev/emo-go.apk)`,
                 RunE: func(cmd *cobra.Command, args []string) error {
                         if _, err := exec.LookPath("adb"); err != nil {
-                                return fmt.Errorf("adb not found on PATH — install Android Platform Tools")
+                                return fmt.Errorf(`adb not found on PATH — install Android Platform Tools:
+
+  Debian/Ubuntu:  apt-get install -y android-tools-adb
+  macOS:          brew install android-platform-tools
+  Or download:    https://developer.android.com/studio/releases/platform-tools
+
+After installing, make sure 'adb' is in your PATH, then connect a device
+or start an emulator with: emulator -avd <name>`)
                         }
                         // Read dev server URL from emo.toml or default to localhost:7575.
                         dir, _ := os.Getwd()
