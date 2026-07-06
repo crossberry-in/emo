@@ -59,10 +59,38 @@ emo combines Go's static typing and fast compile with a React-like component mod
 
 ## Install
 
+### One-line install (recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+```
+
+This downloads a pre-built binary for your platform (Linux/macOS/Windows × amd64/arm64) from the [latest release](https://github.com/crossberry-in/emo/releases) and installs it to `~/.local/bin/emo`.
+
+If no pre-built binary is available, the script falls back to building from source (requires Go 1.22+ and git).
+
+**Install a specific version:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash -s -- v0.1.0
+```
+
+**Install to a custom directory:**
+
+```bash
+EMO_INSTALL_DIR=/usr/local/bin curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+```
+
+**Authenticated install (avoids GitHub API rate limits):**
+
+```bash
+GITHUB_TOKEN=ghp_xxx curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash
+```
+
 ### Build from source
 
 ```bash
-git clone https://github.com/emo-framework/emo
+git clone https://github.com/crossberry-in/emo
 cd emo
 go build -o /usr/local/bin/emo ./cmd/emo
 ```

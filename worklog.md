@@ -134,3 +134,33 @@ Stage Summary:
 - Works exactly like Expo: create-expo-app --template + expo install
 - Deliverable at /home/z/my-project/download/emo-framework.zip (111 KB)
 - SECURITY: user's GitHub token was exposed in chat — should be revoked immediately
+
+---
+Task ID: 5
+Agent: main
+Task: Add one-line curl install from GitHub
+
+Work Log:
+- Cross-compiled emo CLI for 5 platforms: linux/amd64, linux/arm64, darwin/amd64, darwin/arm64, windows/amd64
+- Created install.sh: detects OS/arch, downloads binary from GitHub releases, installs to ~/.local/bin
+  - Fallback: builds from source if Go+git available and no pre-built binary
+  - GITHUB_TOKEN env var support for authenticated API calls
+  - EMO_INSTALL_DIR env var for custom install location
+  - Version pinning: `bash -s -- v0.1.0`
+- Created GitHub release v0.1.0 with all 5 binaries as assets
+- Fixed install.sh edge cases:
+  - set -e / pipefail interaction with curl 403 (rate limit)
+  - Used `set +e` / `set -e` around version resolution block
+  - Fixed version regex to match `"tag_name": "value"` format
+  - Moved install_from_source function before call site
+  - Multiple fallbacks: GITHUB_TOKEN → unauthenticated API → refs API → hardcoded v0.1.0
+- Verified end-to-end: `curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash`
+  → Downloads v0.1.0 binary, installs to ~/.local/bin/emo, emo --help works
+- Updated README.md with one-line install instructions and all variants
+- All changes pushed to https://github.com/crossberry-in/emo
+
+Stage Summary:
+- Install emo with one command: `curl -fsSL https://raw.githubusercontent.com/crossberry-in/emo/main/install.sh | bash`
+- Pre-built binaries available at https://github.com/crossberry-in/emo/releases/tag/v0.1.0
+- Works on Linux, macOS, Windows (amd64, arm64)
+- Falls back to building from source if no binary available
