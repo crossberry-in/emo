@@ -7,6 +7,7 @@ import (
         "path/filepath"
 
         "github.com/emo-framework/emo/codegen"
+        "github.com/emo-framework/emo/eml"
         "github.com/emo-framework/emo/server"
         "github.com/spf13/cobra"
 )
@@ -22,7 +23,25 @@ func newBuildCmd() *cobra.Command {
                                 return err
                         }
                         dir, _ := os.Getwd()
-                        root, err := loadRootComponent(dir)
+                        // Transpile .em → Go source for standalone build.
+                        emPath := filepath.Join(dir, "App.em")
+                        goSrc, err := eml.TranspileToGo(emPath, pkg)
+                        if err != nil {
+                                return fmt.Errorf("transpile App.em: %w", err)
+                        }
+                        genDir := filepath.Join(dir, "__emo_gen__")
+                        if err := os.MkdirAll(genDir, 0o755); err != nil {
+                                return err
+                        }
+                        genPath := filepath.Join(genDir, "emo_gen.go")
+                        if err := os.WriteFile(genPath, []byte(goSrc), 0o644); err != nil {
+                                return err
+                        }
+                        fmt.Printf("generated %s\n", genPath)
+
+                        // For the Kotlin codegen, we need a dsl.Element tree. We evaluate
+                        // the .em component at runtime.
+                        root, err := loadRootFromEM(dir)
                         if err != nil {
                                 return err
                         }

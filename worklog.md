@@ -70,3 +70,30 @@ Stage Summary:
 - /home/z/my-project/download/emo-framework.zip — 90 KB full Go framework source
 - /home/z/my-project/download/README.md — installation & usage guide
 - APK verified: contains classes.dex (compiled Kotlin), all AndroidX/Compose deps, valid Android package signature
+
+---
+Task ID: 3
+Agent: main
+Task: Add .em custom language + CSS support for emo 0.1 SDK
+
+Work Log:
+- Built eml/ package: lexer, parser, AST, CSS parser, Go codegen, transpiler entry point
+- .em language features: component/state/render blocks, JSX-like syntax (<Column>, <Text>, <Button>), {expression} interpolation, onClick/onChange handlers with state-assignment rewriting, className → CSS lookup, import declarations
+- CSS parser: .class { prop: value; } syntax with dp/sp/px units, maps to emo DSL props (background→Bg, color→Fg, padding→Padding, spacing→Spacing, font-size→Font)
+- Codegen: .em → Go DSL source (dsl.Column, dsl.Text, etc.) with verbatim expression capture via token positions
+- 5 passing tests: TestParse, TestGenerateGo, TestParseCSS, TestCSSPropToEmo, TestRewriteStateAssign
+- Updated cli/init.go: scaffolds App.em + App.css + Header.em instead of App.go
+- Updated cli/start.go: loadRootFromEM() finds .em files, emlRootFactory() re-transpiles on each render for live reload, evalJSXElement() evaluates .em AST → dsl.Element at runtime (no Go recompilation needed)
+- Updated server/server.go: isGoFile() now watches .em and .css files too
+- Updated cli/build.go: transpiles .em → Go source for standalone builds
+- Updated examples/counter/: Counter.em + Counter.css replace App.go
+- All packages compile (go build ./... exit=0), all tests pass
+- Verified end-to-end: emo init creates .em project, emo start loads Counter.em + CSS and serves vtree
+- Rebuilt emo-framework.zip (107 KB, 64 files, includes eml/ package and .em examples)
+
+Stage Summary:
+- emo 0.1 SDK now uses .em custom language (no App.go needed)
+- .em syntax: Svelte/Vue-style single-file components with JSX-like render blocks
+- CSS support: className attributes on elements, .css files with standard CSS syntax
+- Live reload works: edit .em or .css, save, dev server re-transpiles and pushes new vtree
+- Deliverables at /home/z/my-project/download/: emo-framework.zip (107KB), emo-go-preview.apk (8.5MB)

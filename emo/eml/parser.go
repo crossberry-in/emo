@@ -168,38 +168,32 @@ func (p *Parser) parseStateDecl() (StateDecl, error) {
         return sd, nil
 }
 
-// captureExpr captures a Go expression as raw text. The expression ends when
-// we hit a newline that isn't inside braces/parens, or when we hit `}` (end
-// of component) or another top-level keyword.
+// captureExpr captures a Go expression as raw source text. The expression
+// ends when we hit `}` (end of component) or another top-level keyword at
+// depth 0. We use token positions to slice the original source, so the
+// captured text preserves exact formatting (no space-joining artefacts).
 func (p *Parser) captureExpr() (string, error) {
-        var sb strings.Builder
+        startPos := p.peek().Pos
         depth := 0
         for !p.atEnd() {
                 t := p.peek()
                 if depth == 0 {
-                        if t.Kind == TKRBrace {
-                                break
-                        }
-                        if t.Kind == TKKeyword {
+                        if t.Kind == TKRBrace || t.Kind == TKKeyword {
                                 break
                         }
                 }
                 switch t.Kind {
                 case TKLBrace, TKLParen:
                         depth++
-                case TKRBrace:
-                        // already handled above when depth==0; here depth>0
-                        depth--
-                case TKRParen:
+                case TKRBrace, TKRParen:
                         depth--
                 case TKEOF:
                         return "", p.errorf("unexpected EOF in expression")
                 }
-                sb.WriteString(t.Value)
-                sb.WriteByte(' ')
                 p.advance()
         }
-        return strings.TrimSpace(sb.String()), nil
+        endPos := p.peek().Pos
+        return strings.TrimSpace(p.src[startPos:endPos]), nil
 }
 
 // parseJSXElement parses a single JSX element: <Tag attrs>children</Tag> or

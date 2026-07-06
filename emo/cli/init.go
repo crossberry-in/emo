@@ -9,86 +9,87 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const projectTemplate = `package main
+const appEmTemplate = `// {{.Name}}.em — emo 0.1 SDK
+// Edit this file and save — emo pushes the new view tree to your device
+// instantly. No rebuild, no restart.
 
-import (
-	"github.com/emo-framework/emo/dsl"
-)
+import { Header } from "./Header.em"
 
-// App is the root component of your emo app.
-//
-// Edit this function and save the file — emo will push the new view tree
-// to your device instantly. Try changing the text, adding new elements,
-// or wiring up new state with dsl.UseState.
-func App() dsl.Element {
-	count, setCount := dsl.UseStateInt(0)
+component App {
+  state count = 0
+  state name = "{{.Name}}"
 
-	return dsl.Scaffold(
-		dsl.Prop("title", "{{.Name}}"),
-		dsl.Children(
-			dsl.Column(
-				dsl.Spacing(16),
-				dsl.Padding(24),
-				dsl.Children(
-					dsl.Text("emo counter", dsl.Font(28, "bold")),
-					dsl.Text(fmt.Sprintf("Count: %d", count), dsl.Font(18, "normal")),
-					dsl.Button("Increment", dsl.OnClick(func() {
-						setCount(count + 1)
-					})),
-					dsl.Button("Reset", dsl.OnClick(func() {
-						setCount(0)
-					})),
-					dsl.Divider(),
-					dsl.Text("Edit App.go and save to see live reload!", dsl.Fg("#666666")),
-				),
-			),
-		),
-	)
+  render {
+    <Column className="container">
+      <Text fontSize={28} fontWeight="bold">{name} counter</Text>
+      <Text fontSize={18}>Count: {count}</Text>
+      <Row className="buttonRow">
+        <Button onClick={() => count = count - 1}>Decrement</Button>
+        <Button onClick={() => count = count + 1}>Increment</Button>
+      </Row>
+      <Button onClick={() => count = 0}>Reset</Button>
+      <Divider />
+      <Text className="hint">Edit App.em and save for live reload!</Text>
+    </Column>
+  }
 }
 
-func main() {
-	// In emo, main() is invoked only when running the dev server.
-	// emo calls App() on every render — you don't need to do anything here.
-	// For standalone builds, emo generates a Kotlin MainActivity that hosts
-	// the same vtree.
-	emoServe(App)
-}
-
-// emoServe is provided by the emo runtime; the dev server shim installs it
-// at build time. We declare it here so ` + "`go build`" + ` succeeds in the editor.
-var emoServe = func(root func() dsl.Element) {}
+style "./App.css"
 `
 
-const configTemplate = `# emo.toml — project configuration
+const appCssTemplate = `/* {{.Name}}.css — styles for App.em */
+.container {
+  background: #FFFFFF;
+  padding: 24dp;
+  spacing: 16dp;
+}
+
+.buttonRow {
+  spacing: 8dp;
+}
+
+.hint {
+  color: #888888;
+  font-size: 14sp;
+}
+`
+
+const headerEmTemplate = `// Header.em — example imported component
+// Shows how to import and use components across .em files.
+
+component Header {
+  render {
+    <Text fontSize={24} fontWeight="bold">emo app</Text>
+  }
+}
+`
+
+const configTemplate = `# emo.toml — project configuration (emo 0.1 SDK)
 name = "{{.Name}}"
 package = "dev.emo.{{.Slug}}"
 version = "0.1.0"
 
 [dev]
 port = 7575
-# Directory to watch for live reload (relative to project root).
 watch = "."
 
 [build]
-# Output APK path for ` + "`emo build`" + `.
 output = "build/app.apk"
-# Kotlin package name for codegen.
 kotlinPackage = "dev.emo.{{.Slug}}"
 
 [plugins]
-# Built-in plugins ship with emo. Add third-party plugins here as
-# ` + "`name = \"github.com/foo/emo-plugin-bar\"`" + `
 camera = true
 location = true
 storage = true
 vibration = true
 `
 
-const gitignore = `# emo
+const gitignore = `# emo 0.1
 /build/
 /.emo/
 *.apk
 *.keystore
+__emo_gen__/
 `
 
 func newInitCmd() *cobra.Command {
@@ -115,23 +116,29 @@ func initProject(name, pkg string) error {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	// App.go
-	appFile := filepath.Join(dir, "App.go")
+	data := map[string]string{"Name": name, "Slug": slug(name)}
+
+	// App.em
+	appFile := filepath.Join(dir, "App.em")
 	if exists(appFile) {
 		return fmt.Errorf("refusing to overwrite existing %s", appFile)
 	}
-	if err := writeTemplate(appFile, projectTemplate, map[string]string{
-		"Name": name,
-		"Slug": slug(name),
-	}); err != nil {
+	if err := writeTemplate(appFile, appEmTemplate, data); err != nil {
+		return err
+	}
+
+	// App.css
+	if err := writeTemplate(filepath.Join(dir, "App.css"), appCssTemplate, data); err != nil {
+		return err
+	}
+
+	// Header.em (example imported component)
+	if err := writeTemplate(filepath.Join(dir, "Header.em"), headerEmTemplate, data); err != nil {
 		return err
 	}
 
 	// emo.toml
-	if err := writeTemplate(filepath.Join(dir, "emo.toml"), configTemplate, map[string]string{
-		"Name": name,
-		"Slug": slug(name),
-	}); err != nil {
+	if err := writeTemplate(filepath.Join(dir, "emo.toml"), configTemplate, data); err != nil {
 		return err
 	}
 
@@ -140,7 +147,7 @@ func initProject(name, pkg string) error {
 		return err
 	}
 
-	fmt.Printf(`Created emo project "%s".
+	fmt.Printf(`Created emo 0.1 project "%s".
 
 Next steps:
   cd %s
@@ -150,7 +157,7 @@ In another terminal, with an Android emulator running or a device connected via 
   emo go
 
 The emo Go preview app will install and connect to your dev server.
-Edit App.go and save — your UI updates instantly.
+Edit App.em and save — your UI updates instantly.
 `, name, name)
 	return nil
 }

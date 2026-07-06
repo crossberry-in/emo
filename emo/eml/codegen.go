@@ -12,8 +12,6 @@ type CodegenOptions struct {
 }
 
 // GenerateGo produces a complete Go source file from a parsed .em file.
-// The output uses the emo dsl package and is meant to be compiled by the
-// user's toolchain (or by `emo start` via the in-process transpiler).
 func GenerateGo(f *File, opts CodegenOptions) (string, error) {
 	if opts.PackageName == "" {
 		opts.PackageName = "main"
@@ -30,8 +28,6 @@ func GenerateGo(f *File, opts CodegenOptions) (string, error) {
 		emitComponent(&b, f, c)
 	}
 
-	// Emit an App() entry point that calls the first component, so the
-	// dev server can always find a top-level symbol named App.
 	if len(f.Components) > 0 {
 		first := f.Components[0].Name
 		b.WriteString("\n// App is the entry point expected by emo start.\n")
@@ -45,24 +41,20 @@ func emitComponent(b *strings.Builder, f *File, c Component) {
 	b.WriteString("// " + c.Name + " is generated from " + f.Path + ".\n")
 	b.WriteString("func " + c.Name + "() dsl.Element {\n")
 
-	// Emit state declarations.
 	for _, s := range c.States {
 		emitStateDecl(b, s)
 	}
 
-	// Emit render.
 	if c.Render == nil {
 		b.WriteString("\treturn dsl.View()\n")
 	} else {
 		b.WriteString("\treturn ")
-		emitJSXElement(b, f, *c.Render, 0)
+		emitJSXElement(b, f, *c.Render, 1)
 		b.WriteString("\n")
 	}
 	b.WriteString("}\n\n")
 }
 
-// emitStateDecl emits a dsl.UseState* call. We pick the typed helper based
-// on the declared type or the literal default value.
 func emitStateDecl(b *strings.Builder, s StateDecl) {
 	helper := "UseState"
 	defVal := s.Default.Raw
@@ -72,34 +64,58 @@ func emitStateDecl(b *strings.Builder, s StateDecl) {
 	case "string":
 		helper = "UseStateString"
 	default:
-		// Infer from default literal.
 		if _, err := strconv.Atoi(defVal); err == nil {
 			helper = "UseStateInt"
-		} else if (len(defVal) >= 2 && defVal[0] == '"' && defVal[len(defVal)-1] == '"') {
+		} else if len(defVal) >= 2 && defVal[0] == '"' && defVal[len(defVal)-1] == '"' {
 			helper = "UseStateString"
 		}
 	}
-	// Pick setter name: setX where X is the capitalized state name.
 	setter := "set" + capitalize(s.Name)
 	b.WriteString("\t" + s.Name + ", " + setter + " := dsl." + helper + "(" + defVal + ")\n")
 	b.WriteString("\t_ = " + setter + "\n")
 }
 
-// emitJSXElement writes a dsl.<Tag>(...) call for the element.
+// indentStr returns the indentation string for the given depth.
+func indentStr(depth int) string {
+	return strings.Repeat("\t", depth)
+}
+
 func emitJSXElement(b *strings.Builder, f *File, el JSXElement, depth int) {
-	// Map JSX tag → dsl constructor.
+	indent := indentStr(depth)
 	ctor := jsxTagToConstructor(el.Tag)
 
+	// For Text and Button, the first arg is the text content (concatenated
+	// from children). For other elements, children are passed via
+	// dsl.Children(...).
+	if el.Tag == "Text" || el.Tag == "Button" {
+		textArg := buildTextArg(el.Children)
+		b.WriteString("dsl." + ctor + "(" + textArg)
+		// CSS props
+		for _, a := range el.Attrs {
+			if a.Name == "className" && a.Value.Kind == "string" {
+				emitCSSProps(b, f, a.Value.String, depth+1)
+			}
+		}
+		// Explicit attrs (skip className)
+		for _, a := range el.Attrs {
+			if a.Name == "className" {
+				continue
+			}
+			emitAttr(b, a, depth+1)
+		}
+		b.WriteString("\n" + indent + ")")
+		return
+	}
+
+	// Container elements
 	b.WriteString("dsl." + ctor + "(\n")
 
-	// Apply className from CSS first, so explicit attrs can override.
 	for _, a := range el.Attrs {
 		if a.Name == "className" && a.Value.Kind == "string" {
 			emitCSSProps(b, f, a.Value.String, depth+1)
 		}
 	}
 
-	// Emit explicit attributes.
 	for _, a := range el.Attrs {
 		if a.Name == "className" {
 			continue
@@ -107,16 +123,61 @@ func emitJSXElement(b *strings.Builder, f *File, el JSXElement, depth int) {
 		emitAttr(b, a, depth+1)
 	}
 
-	// Emit children as dsl.Children(...) when present.
 	if len(el.Children) > 0 {
-		b.WriteString("\t\tdsl.Children(\n")
+		b.WriteString(indentStr(depth+1) + "dsl.Children(\n")
 		for _, c := range el.Children {
 			emitChild(b, f, c, depth+2)
 		}
-		b.WriteString("\t\t),\n")
+		b.WriteString(indentStr(depth+1) + "),\n")
 	}
 
-	b.WriteString("\t)")
+	b.WriteString(indent + ")")
+}
+
+// buildTextArg concatenates text and expression children into a single Go
+// expression that produces a string. Uses fmt.Sprintf when expressions are
+// present, otherwise returns a plain quoted string.
+func buildTextArg(children []JSXChild) string {
+	if len(children) == 0 {
+		return `""`
+	}
+
+	// Collect parts: text literals and expressions.
+	var parts []string // alternating literal, expr, literal, ...
+	var exprs []string
+	hasExpr := false
+
+	for _, c := range children {
+		switch c.Kind {
+		case "text":
+			parts = append(parts, c.Text)
+		case "expr":
+			parts = append(parts, "\x00") // placeholder
+			exprs = append(exprs, c.Expr)
+			hasExpr = true
+		}
+	}
+
+	if !hasExpr {
+		// Pure text — just quote it.
+		if len(parts) == 1 {
+			return strconv.Quote(parts[0])
+		}
+		return strconv.Quote(strings.Join(parts, ""))
+	}
+
+	// Has expressions — build a fmt.Sprintf format string.
+	var fmtStr strings.Builder
+	exprIdx := 0
+	for _, p := range parts {
+		if p == "\x00" {
+			fmtStr.WriteString("%v")
+			exprIdx++
+		} else {
+			fmtStr.WriteString(strings.ReplaceAll(p, "%", "%%"))
+		}
+	}
+	return "fmt.Sprintf(" + strconv.Quote(fmtStr.String()) + ", " + strings.Join(exprs, ", ") + ")"
 }
 
 func emitCSSProps(b *strings.Builder, f *File, className string, depth int) {
@@ -127,63 +188,87 @@ func emitCSSProps(b *strings.Builder, f *File, className string, depth int) {
 	if props == nil {
 		return
 	}
-	indent := strings.Repeat("\t", depth)
-	// Emit CSS-derived props in a deterministic order.
+	indent := indentStr(depth)
 	for _, k := range sortedKeys(props) {
-		ek, ev, ok := CSSPropToEmo(k, props[k])
-		if !ok {
-			continue
+		v := props[k]
+		switch k {
+		case "background":
+			b.WriteString(indent + "dsl.Bg(" + strconv.Quote(v) + "),\n")
+		case "color":
+			b.WriteString(indent + "dsl.Fg(" + strconv.Quote(v) + "),\n")
+		case "padding":
+			b.WriteString(indent + "dsl.Padding(" + formatGoValue(parseCSSDim(v)) + "),\n")
+		case "spacing":
+			b.WriteString(indent + "dsl.Spacing(" + formatGoValue(parseCSSDim(v)) + "),\n")
+		case "font-size":
+			b.WriteString(indent + "dsl.Font(" + formatGoValue(parseCSSDim(v)) + ", \"normal\"),\n")
+		case "font-weight":
+			b.WriteString(indent + "dsl.Prop(\"fontWeight\", " + strconv.Quote(v) + "),\n")
+		case "width":
+			b.WriteString(indent + "dsl.Width(" + formatGoValue(parseCSSDimOrKeyword(v)) + "),\n")
+		case "height":
+			b.WriteString(indent + "dsl.Height(" + formatGoValue(parseCSSDimOrKeyword(v)) + "),\n")
+		default:
+			b.WriteString(indent + "dsl.Prop(" + strconv.Quote(k) + ", " + strconv.Quote(v) + "),\n")
 		}
-		b.WriteString(indent + "dsl.Prop(" + strconv.Quote(ek) + ", " + formatGoValue(ev) + "),\n")
 	}
 }
 
 func emitAttr(b *strings.Builder, a JSXAttr, depth int) {
-	indent := strings.Repeat("\t", depth)
+	indent := indentStr(depth)
 	switch a.Name {
 	case "onClick":
-		// Wrap the arrow expression in dsl.OnClick. We rewrite `count = count + 1`
-		// to a call to the setter: `setCount(count + 1)`. The simple rewrite
-		// detects assignment to a state variable and converts it.
 		body := rewriteStateAssign(a.Value.Expr)
 		b.WriteString(indent + "dsl.OnClick(func() { " + body + " }),\n")
 	case "onChange":
 		body := rewriteStateAssign(a.Value.Expr)
-		// `onChange={v => name = v}` → dsl.OnChange(func(v string) { setName(v) })
 		param := extractOnChangeParam(a.Value.Expr)
 		if param == "" {
 			param = "_v"
 		}
 		b.WriteString(indent + "dsl.OnChange(func(" + param + " string) { " + body + " }),\n")
+	case "spacing":
+		b.WriteString(indent + "dsl.Spacing(" + numVal(a.Value) + "),\n")
+	case "padding":
+		b.WriteString(indent + "dsl.Padding(" + numVal(a.Value) + "),\n")
+	case "background":
+		b.WriteString(indent + "dsl.Bg(" + strVal(a.Value) + "),\n")
+	case "color":
+		b.WriteString(indent + "dsl.Fg(" + strVal(a.Value) + "),\n")
+	case "fontSize":
+		b.WriteString(indent + "dsl.Font(" + numVal(a.Value) + ", \"normal\"),\n")
+	case "fontWeight":
+		b.WriteString(indent + "dsl.Prop(\"fontWeight\", " + strVal(a.Value) + "),\n")
 	default:
-		// Map common JSX-style props to dsl options.
-		switch a.Name {
-		case "spacing":
-			b.WriteString(indent + "dsl.Spacing(" + formatGoValue(parseCSSDim(a.Value.Number)) + "),\n")
-		case "padding":
-			b.WriteString(indent + "dsl.Padding(" + formatGoValue(parseCSSDim(a.Value.Number)) + "),\n")
-		case "background":
-			b.WriteString(indent + "dsl.Bg(" + strconv.Quote(a.Value.String) + "),\n")
-		case "color":
-			b.WriteString(indent + "dsl.Fg(" + strconv.Quote(a.Value.String) + "),\n")
-		case "fontSize":
-			val := a.Value.Number
-			if val == "" {
-				val = strings.Trim(a.Value.String, "")
-			}
-			b.WriteString(indent + "dsl.Font(" + val + ", \"normal\"),\n")
-		case "fontWeight":
-			// Combined with fontSize — but emit alone as Prop for simplicity.
-			b.WriteString(indent + "dsl.Prop(\"fontWeight\", " + strconv.Quote(a.Value.String) + "),\n")
-		default:
-			// Generic prop passthrough.
-			b.WriteString(indent + "dsl.Prop(" + strconv.Quote(a.Name) + ", " + formatAttrValue(a.Value) + "),\n")
-		}
+		b.WriteString(indent + "dsl.Prop(" + strconv.Quote(a.Name) + ", " + formatAttrValue(a.Value) + "),\n")
 	}
 }
 
+// numVal returns the numeric value from a JSXAttrValue, handling both number
+// and expression kinds.
+func numVal(v JSXAttrValue) string {
+	if v.Kind == "number" {
+		return v.Number
+	}
+	if v.Kind == "expr" {
+		return v.Expr
+	}
+	return "0"
+}
+
+// strVal returns the string value from a JSXAttrValue, quoting if necessary.
+func strVal(v JSXAttrValue) string {
+	if v.Kind == "string" {
+		return strconv.Quote(v.String)
+	}
+	if v.Kind == "expr" {
+		return v.Expr
+	}
+	return `""`
+}
+
 func emitChild(b *strings.Builder, f *File, c JSXChild, depth int) {
-	indent := strings.Repeat("\t", depth)
+	indent := indentStr(depth)
 	switch c.Kind {
 	case "text":
 		b.WriteString(indent + "dsl.Text(" + strconv.Quote(c.Text) + "),\n")
@@ -196,60 +281,26 @@ func emitChild(b *strings.Builder, f *File, c JSXChild, depth int) {
 	}
 }
 
-// ---------------------------------------------------------------------------
-// JSX tag → dsl constructor name
-// ---------------------------------------------------------------------------
-
 func jsxTagToConstructor(tag string) string {
 	switch tag {
-	case "Scaffold":
-		return "Scaffold"
-	case "Column":
-		return "Column"
-	case "Row":
-		return "Row"
-	case "View":
-		return "View"
-	case "Text":
-		return "Text"
-	case "Button":
-		return "Button"
-	case "TextField":
-		return "TextField"
-	case "Image":
-		return "Image"
-	case "Spacer":
-		return "Spacer"
-	case "Divider":
-		return "Divider"
+	case "Scaffold", "Column", "Row", "View", "Text", "Button", "TextField", "Image", "Spacer", "Divider":
+		return tag
 	default:
-		// User-defined component: call as a function (lowercase first letter
-		// since Go exports are PascalCase and components are too).
 		return tag
 	}
 }
 
-// ---------------------------------------------------------------------------
-// State assignment rewriting
-// ---------------------------------------------------------------------------
-
 // rewriteStateAssign converts expressions like "count = count + 1" to
-// "setCount(count + 1)" by detecting the LHS variable and substituting a
-// call to its setter. This is a naive but effective transform for the
-// common cases; complex expressions pass through unchanged.
+// "setCount(count + 1)".
 func rewriteStateAssign(expr string) string {
 	expr = strings.TrimSpace(expr)
-	// Strip arrow function prefix: `() => X` → X
 	if i := strings.Index(expr, "=>"); i >= 0 {
-		// Make sure the => isn't inside a string.
 		lhs := strings.TrimSpace(expr[:i])
 		if lhs == "()" || lhs == "(_)" {
 			return rewriteStateAssign(strings.TrimSpace(expr[i+2:]))
 		}
 	}
-	// Detect "v => name = v" pattern for onChange.
 	if strings.HasPrefix(expr, "(") {
-		// (param) => body
 		cparen := strings.IndexByte(expr, ')')
 		if cparen > 0 && strings.HasPrefix(expr[cparen:], ") =>") {
 			param := strings.TrimSpace(expr[1:cparen])
@@ -260,7 +311,6 @@ func rewriteStateAssign(expr string) string {
 	return rewriteAssign(expr, "")
 }
 
-// rewriteAssign rewrites `x = y` to `setX(y)` if x looks like a state name.
 func rewriteAssign(body, onChangeParam string) string {
 	body = strings.TrimSpace(body)
 	eq := strings.IndexByte(body, '=')
@@ -269,20 +319,15 @@ func rewriteAssign(body, onChangeParam string) string {
 	}
 	lhs := strings.TrimSpace(body[:eq])
 	rhs := strings.TrimSpace(body[eq+1:])
-	// Skip ==, <=, >=, !=
 	if strings.HasPrefix(rhs, "=") {
 		return body
 	}
-	// If lhs is the onChange param itself (e.g. "v" with onChangeParam "v"),
-	// it's an assignment to the input — leave as-is.
 	if onChangeParam != "" && lhs == onChangeParam {
 		return body
 	}
 	return "set" + capitalize(lhs) + "(" + rhs + ")"
 }
 
-// extractOnChangeParam pulls the parameter name out of `v => name = v` or
-// `(v) => name = v`.
 func extractOnChangeParam(expr string) string {
 	expr = strings.TrimSpace(expr)
 	if strings.HasPrefix(expr, "(") {
@@ -291,16 +336,11 @@ func extractOnChangeParam(expr string) string {
 			return strings.TrimSpace(expr[1:c])
 		}
 	}
-	// Bare identifier before =>
 	if i := strings.Index(expr, "=>"); i > 0 {
 		return strings.TrimSpace(expr[:i])
 	}
 	return ""
 }
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 func capitalize(s string) string {
 	if s == "" {
@@ -314,7 +354,6 @@ func formatGoValue(v any) string {
 	case string:
 		return strconv.Quote(x)
 	case float64:
-		// Trim trailing zeros for cleaner output.
 		return strconv.FormatFloat(x, 'f', -1, 64)
 	case int:
 		return strconv.Itoa(x)
@@ -340,7 +379,6 @@ func sortedKeys(m map[string]string) []string {
 	for k := range m {
 		keys = append(keys, k)
 	}
-	// Simple insertion sort — N is tiny.
 	for i := 1; i < len(keys); i++ {
 		for j := i; j > 0 && keys[j-1] > keys[j]; j-- {
 			keys[j-1], keys[j] = keys[j], keys[j-1]

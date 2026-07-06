@@ -292,7 +292,18 @@ func isIdentStart(c byte) bool {
         return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'
 }
 func isIdentPart(c byte) bool {
-        return isIdentStart(c) || isDigit(c) || c == '-'
+        return isIdentStart(c) || isDigit(c)
+}
+
+// isPunct returns true for operator characters in Go expressions that are
+// not handled by earlier lexer cases. These are captured as TKIdent tokens
+// so the parser can reconstruct raw expression text via token positions.
+func isPunct(c byte) bool {
+        switch c {
+        case '-', '+', '*', '!', '%', '&', '|', '?', '~', '^', ';', '[', ']':
+                return true
+        }
+        return false
 }
 
 // LexJSXText tokenises raw text content between JSX tags. Returns a slice of

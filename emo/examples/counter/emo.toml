@@ -1,4 +1,4 @@
-# emo.toml — counter example project
+# emo.toml — counter example project (emo 0.1 SDK)
 name = "counter"
 package = "dev.emo.counter"
 version = "0.1.0"

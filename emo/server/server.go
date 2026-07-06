@@ -184,7 +184,9 @@ func (s *Server) watchLoop() {
 }
 
 func isGoFile(p string) bool {
-        return filepath.Ext(p) == ".go"
+        ext := filepath.Ext(p)
+        // emo 0.1 SDK watches .em and .css files in addition to .go.
+        return ext == ".go" || ext == ".em" || ext == ".css"
 }
 
 // debouncedReload coalesces a burst of file writes into a single reload.
