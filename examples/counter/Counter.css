@@ -1,0 +1,15 @@
+/* Counter.css — styles for Counter.em */
+.container {
+  background: #FFFFFF;
+  padding: 24dp;
+  spacing: 16dp;
+}
+
+.buttonRow {
+  spacing: 8dp;
+}
+
+.hint {
+  color: #888888;
+  font-size: 14sp;
+}

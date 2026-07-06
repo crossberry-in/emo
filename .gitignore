@@ -1,0 +1,11 @@
+/bin/
+/.emo/
+*.apk
+*.keystore
+__emo_gen__/
+/android/app/build/
+/android/.gradle/
+/android/build/
+/android/local.properties
+*.iml
+.DS_Store

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Gradle wrapper bootstrap for emo (manually created)
+DIR="$(cd "$(dirname "$0")" && pwd)"
+GRADLE_HOME=/tmp/gradle-install/gradle-8.7
+exec "$GRADLE_HOME/bin/gradle" "$@"

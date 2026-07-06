@@ -1,0 +1,18 @@
+# emo.toml — counter example project (emo 0.1 SDK)
+name = "counter"
+package = "dev.emo.counter"
+version = "0.1.0"
+
+[dev]
+port = 7575
+watch = "."
+
+[build]
+output = "build/counter.apk"
+kotlinPackage = "dev.emo.counter"
+
+[plugins]
+camera = true
+location = true
+storage = true
+vibration = true
