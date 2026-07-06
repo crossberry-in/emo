@@ -28,6 +28,72 @@ info()  { echo -e "${GREEN}✓${NC} $*"; }
 warn()  { echo -e "${YELLOW}!${NC} $*"; }
 error() { echo -e "${RED}✗${NC} $*" >&2; }
 
+# ---------------------------------------------------------------------------
+# Fallback: build from source using Go.
+# Called when pre-built binary download fails.
+# Args: $1 = binary name
+# ---------------------------------------------------------------------------
+install_from_source() {
+    local BINARY_NAME="${1:-emo}"
+
+    if ! command -v go >/dev/null 2>&1; then
+        error "Go is not installed. Please install Go 1.22+ from https://go.dev/dl/"
+        error "  Or download a pre-built binary from:"
+        error "  https://github.com/$REPO/releases"
+        exit 1
+    fi
+
+    if ! command -v git >/dev/null 2>&1; then
+        error "git is not installed. Please install git first."
+        exit 1
+    fi
+
+    TMP_SRC=$(mktemp -d)
+
+    echo "Cloning $REPO…"
+    if ! git clone --depth 1 "https://github.com/$REPO.git" "$TMP_SRC/emo" 2>&1; then
+        error "git clone failed."
+        rm -rf "$TMP_SRC"
+        exit 1
+    fi
+
+    echo "Building emo (this requires Go 1.22+)…"
+    INSTALL_DIR="${EMO_INSTALL_DIR:-$HOME/.local/bin}"
+    mkdir -p "$INSTALL_DIR"
+
+    (cd "$TMP_SRC/emo" && go build -ldflags="-s -w" -o "$INSTALL_DIR/$BINARY_NAME" ./cmd/emo) || {
+        error "go build failed."
+        rm -rf "$TMP_SRC"
+        exit 1
+    }
+
+    chmod +x "$INSTALL_DIR/$BINARY_NAME"
+    rm -rf "$TMP_SRC"
+    info "Built and installed to $INSTALL_DIR/$BINARY_NAME"
+
+    case ":$PATH:" in
+        *":$INSTALL_DIR:"*) ;;
+        *)
+            warn "$INSTALL_DIR is not in your PATH."
+            echo "  Add: export PATH=\"\$HOME/.local/bin:\$PATH\" to ~/.bashrc"
+            ;;
+    esac
+
+    if "$INSTALL_DIR/$BINARY_NAME" --help >/dev/null 2>&1; then
+        info "emo installed successfully!"
+        echo ""
+        echo -e "  ${BOLD}Quick start:${NC}"
+        echo "    emo init myapp"
+        echo "    cd myapp && emo start"
+        echo ""
+        echo -e "  ${BOLD}Docs:${NC} https://github.com/$REPO"
+        exit 0
+    else
+        error "Build succeeded but 'emo --help' failed."
+        exit 1
+    fi
+}
+
 # --- Detect OS ---
 OS="$(uname -s)"
 ARCH="$(uname -m)"
@@ -57,18 +123,18 @@ if [ "$VERSION" = "latest" ]; then
     API_URL="https://api.github.com/repos/$REPO/releases/latest"
     # Try with token if available (avoids rate limit)
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
     fi
     # Fall back to unauthenticated API call.
-    if [ -z "$VERSION" ]; then
-        VERSION=$(curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)
+    if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
+        VERSION=$(curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/' || true)
     fi
     # Fall back to the latest tag via the refs API (lighter weight).
-    if [ -z "$VERSION" ]; then
+    if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
         VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/' || true)
     fi
     # Last resort: hardcode the known latest version.
-    if [ -z "$VERSION" ]; then
+    if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
         VERSION="v0.1.0"
         warn "Could not reach GitHub API (rate limit?). Using $VERSION."
     else
@@ -98,7 +164,7 @@ HTTP_CODE=$(curl -fsSL -w "%{http_code}" -o "$TMP_DIR/$BINARY_NAME" "$DOWNLOAD_U
 if [ "$HTTP_CODE" != "200" ]; then
     warn "Pre-built binary not found for $OS/$ARCH ($HTTP_CODE)."
     warn "Building from source…"
-    install_from_source
+    install_from_source "$BINARY_NAME"
     exit 0
 fi
 
@@ -151,42 +217,8 @@ if "$INSTALL_DIR/$BINARY_NAME" --help >/dev/null 2>&1; then
     echo "    emo install Card"
     echo ""
     echo -e "  ${BOLD}Docs:${NC} https://github.com/$REPO"
+    exit 0
 else
     error "Installation completed but 'emo --help' failed. Please report this issue."
     exit 1
 fi
-
-exit 0
-
-# ---------------------------------------------------------------------------
-# Fallback: build from source using Go.
-# ---------------------------------------------------------------------------
-install_from_source() {
-    if ! command -v go >/dev/null 2>&1; then
-        error "Go is not installed. Please install Go 1.22+ from https://go.dev/dl/"
-        error "  Or wait for pre-built binaries to be published on the releases page:"
-        error "  https://github.com/$REPO/releases"
-        exit 1
-    fi
-
-    echo "Cloning $REPO…"
-    TMP_SRC=$(mktemp -d)
-    trap 'rm -rf "$TMP_SRC" "$TMP_DIR"' EXIT
-
-    if ! git clone --depth 1 "https://github.com/$REPO.git" "$TMP_SRC/emo" 2>&1; then
-        error "git clone failed. Is git installed?"
-        exit 1
-    fi
-
-    echo "Building emo…"
-    (cd "$TMP_SRC/emo" && go build -ldflags="-s -w" -o "$TMP_DIR/$BINARY_NAME" ./cmd/emo) || {
-        error "go build failed."
-        exit 1
-    }
-
-    INSTALL_DIR="${EMO_INSTALL_DIR:-$HOME/.local/bin}"
-    mkdir -p "$INSTALL_DIR"
-    mv "$TMP_DIR/$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"
-    chmod +x "$INSTALL_DIR/$BINARY_NAME"
-    info "Built and installed to $INSTALL_DIR/$BINARY_NAME"
-}
