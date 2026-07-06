@@ -135,7 +135,7 @@ if [ "$VERSION" = "latest" ]; then
         VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/')
     fi
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
-        VERSION="v0.1.1"
+        VERSION="v0.1.2"
         warn "Could not reach GitHub API (rate limit?). Using $VERSION."
     else
         info "Latest version: $VERSION"
