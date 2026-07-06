@@ -375,3 +375,33 @@ Stage Summary:
 - Release: https://github.com/crossberry-in/emo-go/releases/tag/v0.2.0
 - APK: 16 MB, installable via adb install -r emo-go-v0.2.0.apk
 - GitHub Actions CI configured for auto-building future releases on tag push
+
+---
+Task ID: 12
+Agent: main
+Task: Create emo docs website and deploy to GitHub Pages
+
+Work Log:
+- Created docs/ directory with:
+  - index.html — landing page with hero, install command, feature cards, architecture diagram
+  - 19 guide pages in docs/guides/:
+    Getting Started: install, quickstart, project-structure
+    .em Language: em-syntax, css, state, components
+    UI Elements: elements, webview, navigation
+    Features: live-reload, android-sync, plugins, haptics, securestore, linking
+    Deploy: build, troubleshooting, cli
+  - assets/style.css — clean minimal theme with purple accent, sidebar, cards, code blocks
+  - assets/script.js — sidebar active state, copy buttons, minimal syntax highlighting
+- Created standalone repo crossberry-in/emo-docs (needed .github/workflows at repo root)
+- GitHub Actions workflow auto-deploys on push to main
+- Enabled GitHub Pages with workflow build type
+- Workflow completed successfully — site is LIVE
+
+Stage Summary:
+- Docs website: https://crossberry-in.github.io/emo-docs/
+- Source repo: https://github.com/crossberry-in/emo-docs
+- 20 pages total (1 landing + 19 guides)
+- Auto-deploys on every push to main via GitHub Actions
+- Clean responsive design with sidebar navigation
+- Copy buttons on install commands
+- Syntax highlighting in code blocks
