@@ -118,22 +118,22 @@ echo "  Version:  $VERSION"
 echo ""
 
 # --- Resolve version ---
+# NOTE: We temporarily disable 'set -e' for version resolution because
+# curl returns non-zero on HTTP 403 (rate limit), which would kill the
+# script under 'set -e'. We handle failures by checking if VERSION is empty.
+set +e
 if [ "$VERSION" = "latest" ]; then
     echo "Resolving latest version…"
     API_URL="https://api.github.com/repos/$REPO/releases/latest"
-    # Try with token if available (avoids rate limit)
     if [ -n "${GITHUB_TOKEN:-}" ]; then
-        VERSION=$( { set +e; curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'; } )
+        VERSION=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
     fi
-    # Fall back to unauthenticated API call.
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
-        VERSION=$( { set +e; curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/'; } )
+        VERSION=$(curl -fsSL "$API_URL" 2>/dev/null | grep '"tag_name"' | head -1 | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')
     fi
-    # Fall back to the latest tag via the refs API (lighter weight).
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
-        VERSION=$( { set +e; curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/'; } )
+        VERSION=$(curl -fsSL "https://api.github.com/repos/$REPO/git/refs/tags" 2>/dev/null | grep '"ref"' | tail -1 | sed -E 's/.*refs\/tags\/([^"]+)".*/\1/')
     fi
-    # Last resort: hardcode the known latest version.
     if [ -z "$VERSION" ] || [ "$VERSION" = "latest" ]; then
         VERSION="v0.1.0"
         warn "Could not reach GitHub API (rate limit?). Using $VERSION."
@@ -141,6 +141,7 @@ if [ "$VERSION" = "latest" ]; then
         info "Latest version: $VERSION"
     fi
 fi
+set -e
 
 # --- Download binary ---
 BINARY_NAME="emo"
